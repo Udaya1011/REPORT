@@ -12,33 +12,20 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_URL = '/api/reports';
-
-  // Fetch reports from MongoDB Atlas
-  const fetchReports = useCallback(async () => {
+  // Load reports from localStorage
+  const fetchReports = useCallback(() => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Frontend: Fetching reports from', API_URL);
-      const res = await fetch(API_URL);
-      console.log('Frontend: Response status:', res.status);
-      
-      if (!res.ok) {
-        throw new Error(`Server responded with ${res.status}`);
-      }
-      
-      const data = await res.json();
-      console.log('Frontend: Received data:', data);
-      
-      if (Array.isArray(data)) {
-        setReports(data);
-      } else {
-        console.warn('Frontend: Unexpected data format, expected array');
-        setReports([]);
-      }
+      console.log('Frontend: Fetching reports from localStorage');
+      const stored = localStorage.getItem('qc_reports');
+      const data = stored ? JSON.parse(stored) : [];
+      console.log('Frontend: Received data from localStorage:', data);
+      setReports(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Frontend: Error fetching reports:', err);
-      setError('Backend server not reachable. Make sure you run: npm run dev:all');
+      setError('Error loading data from localStorage');
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -49,26 +36,24 @@ function App() {
     fetchReports();
   }, [fetchReports]);
 
-  const handleAddReport = async (newReport) => {
+  const handleAddReport = (newReport) => {
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newReport),
-      });
+      // Generate unique ID
+      const id = Date.now().toString();
+      const reportWithId = { ...newReport, id };
       
-      if (!response.ok) throw new Error('Failed to save report');
+      // Save to localStorage
+      const updated = [reportWithId, ...reports];
+      localStorage.setItem('qc_reports', JSON.stringify(updated));
       
-      const savedReport = await response.json();
-      setReports(prev => [savedReport, ...prev]);
+      setReports(updated);
       setShowForm(false);
-      setSelectedReport(savedReport);
+      setSelectedReport(reportWithId);
       setView('details');
+      console.log('Report saved to localStorage:', reportWithId);
     } catch (err) {
       console.error('Error saving report:', err);
-      alert('Failed to save report. Check if backend server is running.');
+      setError('Failed to save report to localStorage');
     }
   };
 
@@ -77,20 +62,23 @@ function App() {
     setView('details');
   };
 
-  const handleDeleteReport = async (id) => {
+  const handleDeleteReport = (id) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete report');
-      setReports(prev => prev.filter(report => report.id !== id));
+      // Remove from state
+      const updated = reports.filter(report => report.id !== id);
+      
+      // Save to localStorage
+      localStorage.setItem('qc_reports', JSON.stringify(updated));
+      
+      setReports(updated);
       if (selectedReport && selectedReport.id === id) {
         setSelectedReport(null);
         setView('list');
       }
+      console.log('Report deleted from localStorage:', id);
     } catch (err) {
       console.error('Error deleting report:', err);
-      alert('Failed to delete report.');
+      setError('Failed to delete report from localStorage');
     }
   };
 
