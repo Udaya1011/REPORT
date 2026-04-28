@@ -123,13 +123,28 @@ function App() {
       </nav>
 
       <main className="main-content">
-        {view === 'list' ? (
+        {error && (
+          <div style={{padding: '2rem', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', margin: '2rem', color: '#991b1b'}}>
+            <strong>❌ Error:</strong> {error}
+            <br />
+            <small>Make sure the backend server is running: <code>npm run server</code></small>
+          </div>
+        )}
+        
+        {loading && view === 'list' && (
+          <div style={{padding: '4rem', textAlign: 'center', color: 'var(--text-muted)'}}>
+            <p>⏳ Loading reports...</p>
+          </div>
+        )}
+        
+        {!loading && view === 'list' ? (
           <ReportList 
             reports={reports} 
             onSelectReport={handleSelectReport} 
+            onDeleteReport={handleDeleteReport}
             onAddNew={() => setShowForm(true)} 
           />
-        ) : (
+        ) : !loading && (
           <ReportDetails 
             report={selectedReport} 
             onBack={() => setView('list')} 
