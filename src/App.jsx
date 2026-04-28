@@ -9,26 +9,38 @@ function App() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [view, setView] = useState('list'); // 'list' or 'details'
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const API_URL = '/api/reports';
 
-  // Load from MongoDB Atlas
+  // Load from MongoDB Atlas - runs on mount and when needed
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Frontend: Fetching reports from', API_URL);
+      const res = await fetch(API_URL);
+      console.log('Frontend: Response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('Frontend: Received data:', data);
+      setReports(Array.isArray(data) ? data : []);
+      setLoading(false);
+    } catch (err) {
+      console.error('Frontend: Error fetching reports:', err);
+      setError(err.message);
+      setReports([]);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    console.log('Frontend: Fetching reports from', API_URL);
-    fetch(API_URL)
-      .then(res => {
-        console.log('Frontend: Response status:', res.status);
-        return res.json();
-      })
-      .then(data => {
-        console.log('Frontend: Received data:', data);
-        if (data) {
-          setReports(data);
-        }
-      })
-      .catch(err => {
-        console.error('Frontend: Error fetching reports:', err);
-      });
+    fetchReports();
   }, []);
 
   const handleAddReport = async (newReport) => {
@@ -44,17 +56,16 @@ function App() {
       if (!response.ok) throw new Error('Failed to save report');
       
       const savedReport = await response.json();
-      setReports(prev => [savedReport, ...prev]);
+      // Refresh the entire list to ensure data is consistent
+      await fetchReports();
       setShowForm(false);
       setSelectedReport(savedReport);
       setView('details');
     } catch (err) {
       console.error('Error saving report:', err);
-      // Fallback for UI
-      setReports(prev => [newReport, ...prev]);
-      setShowForm(false);
-      setSelectedReport(newReport);
-      setView('details');
+      setError(err.message);
+      // Still try to refresh the list
+      await fetchReports();
     }
   };
 
@@ -69,13 +80,16 @@ function App() {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete report');
-      setReports(prev => prev.filter(report => report.id !== id));
+      
+      // Refresh the list after deletion
+      await fetchReports();
       if (selectedReport && selectedReport.id === id) {
         setSelectedReport(null);
         setView('list');
       }
     } catch (err) {
       console.error('Error deleting report:', err);
+      setError(err.message);
     }
   };
 
