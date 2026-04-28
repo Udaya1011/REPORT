@@ -15,43 +15,54 @@ const ReportList = ({ reports, onSelectReport, onAddNew }) => {
       </div>
 
       <div className="report-grid">
-        {reports.map(report => (
-          <div key={report.id} className="report-card" onClick={() => onSelectReport(report)}>
-            <div className="card-header">
-              <span className={`brand-badge badge-${report.brand.toLowerCase()}`}>
-                {report.brand}
-              </span>
-              <FileText size={18} color="var(--text-muted)" />
-            </div>
-            
-            <h3 className="card-title">{report.productCode}</h3>
-            <div className="card-meta">
-              <Hash size={14} /> {report.po}
-            </div>
-            <div className="card-meta" style={{marginTop: '0.25rem'}}>
-              <Calendar size={14} /> {report.date}
-            </div>
-
-            <div className="card-stats">
-              <div className="stat-item">
-                <span className="stat-label">Total Qty</span>
-                <span className="stat-value">
-                  {Object.values(report.quantities).reduce((a, b) => a + b, 0)}
-                </span>
-              </div>
-              <div className="stat-item" style={{textAlign: 'right'}}>
-                <span className="stat-label">Status</span>
-                <span className="stat-value" style={{color: report.status === 'PASS' ? 'var(--success)' : 'var(--warning)'}}>
-                  {report.status}
-                </span>
-              </div>
-            </div>
-            
-            <div style={{marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600}}>
-              View Full Report <ChevronRight size={14} />
-            </div>
+        {reports.length === 0 ? (
+          <div style={{gridColumn: '1/-1', textAlign: 'center', padding: '4rem', background: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+            <Layers size={48} color="var(--text-muted)" style={{marginBottom: '1rem', opacity: 0.5}} />
+            <h3 style={{color: 'var(--text-muted)'}}>No reports found</h3>
+            <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem'}}>Start by adding your first quality inspection report.</p>
+            <button className="btn btn-primary" onClick={onAddNew} style={{marginTop: '1.5rem'}}>
+              + Create First Report
+            </button>
           </div>
-        ))}
+        ) : (
+          reports.map(report => (
+            <div key={report.id} className="report-card" onClick={() => onSelectReport(report)}>
+              <div className="card-header">
+                <span className={`brand-badge badge-${report.brand.toLowerCase()}`}>
+                  {report.brand}
+                </span>
+                <FileText size={18} color="var(--text-muted)" />
+              </div>
+              
+              <h3 className="card-title">{report.productCode}</h3>
+              <div className="card-meta">
+                <Hash size={14} /> {report.po}
+              </div>
+              <div className="card-meta" style={{marginTop: '0.25rem'}}>
+                <Calendar size={14} /> {report.date}
+              </div>
+
+              <div className="card-stats">
+                <div className="stat-item">
+                  <span className="stat-label">Total Qty</span>
+                  <span className="stat-value">
+                    {Object.values(report.quantities).reduce((a, b) => a + b, 0)}
+                  </span>
+                </div>
+                <div className="stat-item" style={{textAlign: 'right'}}>
+                  <span className="stat-label">Status</span>
+                  <span className="stat-value" style={{color: report.status === 'PASS' ? 'var(--success)' : 'var(--warning)'}}>
+                    {report.status}
+                  </span>
+                </div>
+              </div>
+              
+              <div style={{marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600}}>
+                View Full Report <ChevronRight size={14} />
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

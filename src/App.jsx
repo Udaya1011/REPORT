@@ -10,7 +10,7 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [view, setView] = useState('list'); // 'list' or 'details'
 
-  const API_URL = 'http://localhost:5000/api/reports';
+  const API_URL = '/api/reports';
 
   // Load from MongoDB Atlas
   useEffect(() => {
