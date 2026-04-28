@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReportList from './components/ReportList';
 import ReportForm from './components/ReportForm';
 import ReportDetails from './components/ReportDetails';
@@ -14,34 +14,40 @@ function App() {
 
   const API_URL = '/api/reports';
 
-  // Load from MongoDB Atlas - runs on mount and when needed
-  const fetchReports = async () => {
+  // Fetch reports from MongoDB Atlas
+  const fetchReports = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
       console.log('Frontend: Fetching reports from', API_URL);
       const res = await fetch(API_URL);
       console.log('Frontend: Response status:', res.status);
       
       if (!res.ok) {
-        throw new Error(`API error: ${res.status}`);
+        throw new Error(`Server responded with ${res.status}`);
       }
       
       const data = await res.json();
       console.log('Frontend: Received data:', data);
-      setReports(Array.isArray(data) ? data : []);
-      setLoading(false);
+      
+      if (Array.isArray(data)) {
+        setReports(data);
+      } else {
+        console.warn('Frontend: Unexpected data format, expected array');
+        setReports([]);
+      }
     } catch (err) {
       console.error('Frontend: Error fetching reports:', err);
-      setError(err.message);
-      setReports([]);
+      setError('Backend server not reachable. Make sure you run: npm run dev:all');
+    } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Load on mount
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [fetchReports]);
 
   const handleAddReport = async (newReport) => {
     try {
@@ -56,16 +62,13 @@ function App() {
       if (!response.ok) throw new Error('Failed to save report');
       
       const savedReport = await response.json();
-      // Refresh the entire list to ensure data is consistent
-      await fetchReports();
+      setReports(prev => [savedReport, ...prev]);
       setShowForm(false);
       setSelectedReport(savedReport);
       setView('details');
     } catch (err) {
       console.error('Error saving report:', err);
-      setError(err.message);
-      // Still try to refresh the list
-      await fetchReports();
+      alert('Failed to save report. Check if backend server is running.');
     }
   };
 
@@ -80,16 +83,14 @@ function App() {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete report');
-      
-      // Refresh the list after deletion
-      await fetchReports();
+      setReports(prev => prev.filter(report => report.id !== id));
       if (selectedReport && selectedReport.id === id) {
         setSelectedReport(null);
         setView('list');
       }
     } catch (err) {
       console.error('Error deleting report:', err);
-      setError(err.message);
+      alert('Failed to delete report.');
     }
   };
 
@@ -123,28 +124,41 @@ function App() {
       </nav>
 
       <main className="main-content">
-        {error && (
-          <div style={{padding: '2rem', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', margin: '2rem', color: '#991b1b'}}>
-            <strong>❌ Error:</strong> {error}
-            <br />
-            <small>Make sure the backend server is running: <code>npm run server</code></small>
+        {loading ? (
+          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem', flexDirection: 'column', gap: '1rem'}}>
+            <div style={{
+              width: '40px', height: '40px', border: '4px solid var(--border)',
+              borderTop: '4px solid var(--accent)', borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            <p style={{color: 'var(--text-muted)'}}>Loading reports...</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
-        )}
-        
-        {loading && view === 'list' && (
-          <div style={{padding: '4rem', textAlign: 'center', color: 'var(--text-muted)'}}>
-            <p>⏳ Loading reports...</p>
+        ) : error ? (
+          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem', flexDirection: 'column', gap: '1rem'}}>
+            <div style={{
+              padding: '2rem', background: '#fef2f2', border: '1px solid #fecaca',
+              borderRadius: '12px', textAlign: 'center', maxWidth: '500px'
+            }}>
+              <p style={{color: '#dc2626', fontWeight: 600, marginBottom: '0.5rem'}}>⚠️ Connection Error</p>
+              <p style={{color: '#991b1b', fontSize: '0.9rem', marginBottom: '1rem'}}>{error}</p>
+              <button 
+                className="btn btn-primary" 
+                onClick={fetchReports}
+                style={{margin: '0 auto'}}
+              >
+                🔄 Retry
+              </button>
+            </div>
           </div>
-        )}
-        
-        {!loading && view === 'list' ? (
+        ) : view === 'list' ? (
           <ReportList 
             reports={reports} 
             onSelectReport={handleSelectReport} 
             onDeleteReport={handleDeleteReport}
             onAddNew={() => setShowForm(true)} 
           />
-        ) : !loading && (
+        ) : (
           <ReportDetails 
             report={selectedReport} 
             onBack={() => setView('list')} 
