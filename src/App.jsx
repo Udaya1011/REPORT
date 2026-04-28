@@ -14,15 +14,20 @@ function App() {
 
   // Load from MongoDB Atlas
   useEffect(() => {
+    console.log('Frontend: Fetching reports from', API_URL);
     fetch(API_URL)
-      .then(res => res.json())
+      .then(res => {
+        console.log('Frontend: Response status:', res.status);
+        return res.json();
+      })
       .then(data => {
+        console.log('Frontend: Received data:', data);
         if (data) {
           setReports(data);
         }
       })
       .catch(err => {
-        console.error('Error fetching reports:', err);
+        console.error('Frontend: Error fetching reports:', err);
       });
   }, []);
 
@@ -56,6 +61,22 @@ function App() {
   const handleSelectReport = (report) => {
     setSelectedReport(report);
     setView('details');
+  };
+
+  const handleDeleteReport = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete report');
+      setReports(prev => prev.filter(report => report.id !== id));
+      if (selectedReport && selectedReport.id === id) {
+        setSelectedReport(null);
+        setView('list');
+      }
+    } catch (err) {
+      console.error('Error deleting report:', err);
+    }
   };
 
   return (

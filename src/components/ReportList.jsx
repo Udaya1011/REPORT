@@ -1,7 +1,7 @@
 import React from 'react';
-import { Calendar, Layers, FileText, ChevronRight, Hash } from 'lucide-react';
+import { Calendar, Layers, FileText, ChevronRight, Hash, Trash2 } from 'lucide-react';
 
-const ReportList = ({ reports, onSelectReport, onAddNew }) => {
+const ReportList = ({ reports, onSelectReport, onDeleteReport, onAddNew }) => {
   return (
     <div className="report-list-view">
       <div className="header-actions">
@@ -28,10 +28,22 @@ const ReportList = ({ reports, onSelectReport, onAddNew }) => {
           reports.map(report => (
             <div key={report.id} className="report-card" onClick={() => onSelectReport(report)}>
               <div className="card-header">
-                <span className={`brand-badge badge-${report.brand.toLowerCase()}`}>
+                <span className={`brand-badge badge-${report.brand?.toLowerCase()}`}>
                   {report.brand}
                 </span>
-                <FileText size={18} color="var(--text-muted)" />
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                  <button 
+                    className="delete-btn" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if(window.confirm('Delete this report?')) onDeleteReport(report.id);
+                    }}
+                    style={{background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px'}}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <FileText size={18} color="var(--text-muted)" />
+                </div>
               </div>
               
               <h3 className="card-title">{report.productCode}</h3>
@@ -46,7 +58,7 @@ const ReportList = ({ reports, onSelectReport, onAddNew }) => {
                 <div className="stat-item">
                   <span className="stat-label">Total Qty</span>
                   <span className="stat-value">
-                    {Object.values(report.quantities).reduce((a, b) => a + b, 0)}
+                    {Object.values(report.quantities || {}).reduce((a, b) => a + (b || 0), 0)}
                   </span>
                 </div>
                 <div className="stat-item" style={{textAlign: 'right'}}>
