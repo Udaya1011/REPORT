@@ -17,8 +17,12 @@ function App() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const [filterDate, setFilterDate] = useState(todayStr);
   const [bulkReports, setBulkReports] = useState([]);
-
   const [isAutoDownload, setIsAutoDownload] = useState(false);
+
+  // Dynamically select API URL based on environment (Localhost vs Render)
+  const API_URL = import.meta.env.PROD 
+    ? 'https://report-backend-1-2iec.onrender.com/api/reports' 
+    : 'http://localhost:5000/api/reports';
 
   // Load reports from MongoDB
   const fetchReports = useCallback(async () => {
@@ -26,7 +30,7 @@ function App() {
     setError(null);
     try {
       console.log('Frontend: Fetching reports from MongoDB');
-      const response = await fetch('/api/reports');
+      const response = await fetch(API_URL);
       if (!response.ok) throw new Error('Failed to fetch from server');
       const data = await response.json();
       console.log('Frontend: Received data from MongoDB:', data);
@@ -49,7 +53,7 @@ function App() {
     setLoading(true);
     try {
       console.log('Frontend: Sending new report to MongoDB:', newReport);
-      const response = await fetch('/api/reports', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newReport)
@@ -80,7 +84,7 @@ function App() {
   const handleDeleteReport = async (id) => {
     try {
       console.log('Frontend: Deleting report from MongoDB:', id);
-      const response = await fetch(`/api/reports/${id}`, {
+      const response = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE'
       });
       
