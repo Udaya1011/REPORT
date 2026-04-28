@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ReportList from './components/ReportList';
 import ReportForm from './components/ReportForm';
 import ReportDetails from './components/ReportDetails';
+import BulkReport from './components/BulkReport';
 import { Shield, Bell, User, Search } from 'lucide-react';
 
 function App() {
@@ -11,20 +12,28 @@ function App() {
   const [view, setView] = useState('list'); // 'list' or 'details'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const [filterDate, setFilterDate] = useState(todayStr);
+  const [bulkReports, setBulkReports] = useState([]);
 
-  // Load reports from localStorage
-  const fetchReports = useCallback(() => {
+  const [isAutoDownload, setIsAutoDownload] = useState(false);
+
+  // Load reports from MongoDB
+  const fetchReports = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Frontend: Fetching reports from localStorage');
-      const stored = localStorage.getItem('qc_reports');
-      const data = stored ? JSON.parse(stored) : [];
-      console.log('Frontend: Received data from localStorage:', data);
+      console.log('Frontend: Fetching reports from MongoDB');
+      const response = await fetch('/api/reports');
+      if (!response.ok) throw new Error('Failed to fetch from server');
+      const data = await response.json();
+      console.log('Frontend: Received data from MongoDB:', data);
       setReports(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Frontend: Error fetching reports:', err);
-      setError('Error loading data from localStorage');
+      setError('Error connecting to database. Please check if server is running.');
       setReports([]);
     } finally {
       setLoading(false);
@@ -36,24 +45,30 @@ function App() {
     fetchReports();
   }, [fetchReports]);
 
-  const handleAddReport = (newReport) => {
+  const handleAddReport = async (newReport) => {
+    setLoading(true);
     try {
-      // Generate unique ID
-      const id = Date.now().toString();
-      const reportWithId = { ...newReport, id };
+      console.log('Frontend: Sending new report to MongoDB:', newReport);
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReport)
+      });
       
-      // Save to localStorage
-      const updated = [reportWithId, ...reports];
-      localStorage.setItem('qc_reports', JSON.stringify(updated));
+      if (!response.ok) throw new Error('Failed to save report');
       
-      setReports(updated);
+      const savedReport = await response.json();
+      console.log('Report saved to MongoDB:', savedReport);
+      
+      setReports(prev => [savedReport, ...prev]);
       setShowForm(false);
-      setSelectedReport(reportWithId);
+      setSelectedReport(savedReport);
       setView('details');
-      console.log('Report saved to localStorage:', reportWithId);
     } catch (err) {
       console.error('Error saving report:', err);
-      setError('Failed to save report to localStorage');
+      alert('Failed to save report to database: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,30 +77,42 @@ function App() {
     setView('details');
   };
 
-  const handleDeleteReport = (id) => {
+  const handleDeleteReport = async (id) => {
     try {
-      // Remove from state
-      const updated = reports.filter(report => report.id !== id);
+      console.log('Frontend: Deleting report from MongoDB:', id);
+      const response = await fetch(`/api/reports/${id}`, {
+        method: 'DELETE'
+      });
       
-      // Save to localStorage
-      localStorage.setItem('qc_reports', JSON.stringify(updated));
+      if (!response.ok) throw new Error('Failed to delete report');
       
-      setReports(updated);
+      setReports(prev => prev.filter(report => report.id !== id));
       if (selectedReport && selectedReport.id === id) {
         setSelectedReport(null);
         setView('list');
       }
-      console.log('Report deleted from localStorage:', id);
+      console.log('Report deleted from MongoDB:', id);
     } catch (err) {
       console.error('Error deleting report:', err);
-      setError('Failed to delete report from localStorage');
+      alert('Failed to delete report: ' + err.message);
     }
   };
+
+  const filteredReports = reports.filter(report => {
+    const matchesSearch = 
+      report.productCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.po?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.brand?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDate = !filterDate || report.date === filterDate;
+    
+    return matchesSearch && matchesDate;
+  });
 
   return (
     <div className="app-container">
       <nav className="navbar">
-        <div className="brand-logo" onClick={() => setView('list')} style={{cursor: 'pointer'}}>
+        <div className="brand-logo" onClick={() => {setView('list'); setSearchTerm(''); setFilterDate('');}} style={{cursor: 'pointer'}}>
           <div className="logo-icon">
             <Shield size={20} />
           </div>
@@ -93,20 +120,12 @@ function App() {
         </div>
         
         <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
-          <div style={{display: 'flex', background: 'var(--background)', padding: '0.5rem 1rem', borderRadius: '20px', alignItems: 'center', gap: '0.5rem'}}>
-            <Search size={16} color="var(--text-muted)" />
-            <input 
-              type="text" 
-              placeholder="Search reports..." 
-              style={{border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', width: '200px'}}
-            />
-          </div>
           <Bell size={20} color="var(--text-muted)" cursor="pointer" />
           <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
             <div style={{width: '32px', height: '32px', background: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'}}>
               <User size={18} style={{margin: 'auto'}} />
             </div>
-            <span style={{fontWeight: 600, fontSize: '0.9rem'}}>Admin</span>
+            <span className="user-name" style={{fontWeight: 600, fontSize: '0.9rem'}}>Admin</span>
           </div>
         </div>
       </nav>
@@ -141,16 +160,36 @@ function App() {
           </div>
         ) : view === 'list' ? (
           <ReportList 
-            reports={reports} 
+            reports={filteredReports} 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterDate={filterDate}
+            setFilterDate={setFilterDate}
             onSelectReport={handleSelectReport} 
             onDeleteReport={handleDeleteReport}
             onAddNew={() => setShowForm(true)} 
+            onPrintAll={(customReports) => {
+              setBulkReports(customReports || filteredReports);
+              setIsAutoDownload(true);
+            }}
           />
         ) : (
           <ReportDetails 
             report={selectedReport} 
             onBack={() => setView('list')} 
           />
+        )}
+
+        {/* Hidden Bulk Report for background downloads */}
+        {isAutoDownload && (
+          <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '297mm' }}>
+             <BulkReport 
+                reports={bulkReports} 
+                onBack={() => setIsAutoDownload(false)} 
+                autoDownload={true}
+                onDownloadComplete={() => setIsAutoDownload(false)}
+             />
+          </div>
         )}
       </main>
 
