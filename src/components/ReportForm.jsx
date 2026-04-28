@@ -31,7 +31,7 @@ const ReportForm = ({ onClose, onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ ...formData, id: Date.now().toString() });
+    onSubmit({ ...formData, status: 'PASS' });
   };
 
   return (

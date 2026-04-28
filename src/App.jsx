@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import ReportList from './components/ReportList';
 import ReportForm from './components/ReportForm';
 import ReportDetails from './components/ReportDetails';
-import { mockReports } from './mockData';
 import { Shield, Bell, User, Search } from 'lucide-react';
 
 function App() {
@@ -11,23 +10,47 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [view, setView] = useState('list'); // 'list' or 'details'
 
-  // Load from localStorage or mock data
+  const API_URL = 'http://localhost:5000/api/reports';
+
+  // Load from MongoDB Atlas
   useEffect(() => {
-    const saved = localStorage.getItem('qc-reports');
-    if (saved) {
-      setReports(JSON.parse(saved));
-    } else {
-      setReports(mockReports);
-    }
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setReports(data);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching reports:', err);
+      });
   }, []);
 
-  const handleAddReport = (newReport) => {
-    const updated = [newReport, ...reports];
-    setReports(updated);
-    localStorage.setItem('qc-reports', JSON.stringify(updated));
-    setShowForm(false);
-    setSelectedReport(newReport);
-    setView('details');
+  const handleAddReport = async (newReport) => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newReport),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save report');
+      
+      const savedReport = await response.json();
+      setReports(prev => [savedReport, ...prev]);
+      setShowForm(false);
+      setSelectedReport(savedReport);
+      setView('details');
+    } catch (err) {
+      console.error('Error saving report:', err);
+      // Fallback for UI
+      setReports(prev => [newReport, ...prev]);
+      setShowForm(false);
+      setSelectedReport(newReport);
+      setView('details');
+    }
   };
 
   const handleSelectReport = (report) => {
