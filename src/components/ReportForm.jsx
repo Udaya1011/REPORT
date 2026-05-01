@@ -2,13 +2,25 @@ import React, { useState } from 'react';
 import { X, Calendar, Hash, Tag, CheckCircle2, ChevronRight, ChevronLeft, Camera, Loader2 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 
-const ReportForm = ({ onClose, onSubmit }) => {
+const ReportForm = ({ onClose, onSubmit, report = null }) => {
   const [step, setStep] = useState(1);
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  const [poPrefix, setPoPrefix] = useState('HA_25-26_');
-  const [poSuffix, setPoSuffix] = useState('');
+  const [poPrefix, setPoPrefix] = useState(() => {
+    if (report && report.po) {
+      const match = report.po.match(/(HA[_\-]\d{2}[\-\_]\d{2}[_\-])/i);
+      return match ? match[1].toUpperCase() : 'HA_25-26_';
+    }
+    return 'HA_25-26_';
+  });
+  const [poSuffix, setPoSuffix] = useState(() => {
+    if (report && report.po) {
+      const match = report.po.match(/(?:HA[_\-]\d{2}[\-\_]\d{2}[_\-])(\d+)/i);
+      return match ? match[1] : report.po.split('_').pop();
+    }
+    return '';
+  });
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const videoRef = React.useRef(null);
@@ -107,13 +119,13 @@ const ReportForm = ({ onClose, onSubmit }) => {
   };
 
   const [formData, setFormData] = useState({
-    brand: '',
-    date: todayStr,
-    po: '',
-    productCode: '',
-    quantities: { S: 0, M: 0, L: 0, XL: 0, '2XL': 0, '3XL': 0, '4XL': 0 },
-    unitName: 'Main Unit',
-    qamName: 'Admin'
+    brand: report?.brand || '',
+    date: report?.date || todayStr,
+    po: report?.po || '',
+    productCode: report?.productCode || '',
+    quantities: report?.quantities || { S: 0, M: 0, L: 0, XL: 0, '2XL': 0, '3XL': 0, '4XL': 0 },
+    unitName: report?.unitName || 'HA',
+    qamName: report?.qamName || 'GANESH'
   });
 
   const sizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
@@ -141,7 +153,7 @@ const ReportForm = ({ onClose, onSubmit }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="form-container" onClick={e => e.stopPropagation()}>
         <div className="form-header">
-          <h2>Create New QC Report</h2>
+          <h2>{report ? 'Edit QC Report' : 'Create New QC Report'}</h2>
           <button className="btn btn-secondary" onClick={onClose} style={{ padding: '0.5rem' }}>
             <X size={20} />
           </button>
@@ -185,6 +197,27 @@ const ReportForm = ({ onClose, onSubmit }) => {
                     className="form-input" 
                     value={formData.date}
                     onChange={e => setFormData({...formData, date: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div style={{display: 'flex', gap: '1rem'}}>
+                <div className="form-group" style={{flex: 1}}>
+                  <label className="form-label">Unit Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={formData.unitName}
+                    onChange={e => setFormData({...formData, unitName: e.target.value.toUpperCase()})}
+                  />
+                </div>
+                <div className="form-group" style={{flex: 1}}>
+                  <label className="form-label">QC Personnel</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={formData.qamName}
+                    onChange={e => setFormData({...formData, qamName: e.target.value.toUpperCase()})}
                   />
                 </div>
               </div>
@@ -310,7 +343,7 @@ const ReportForm = ({ onClose, onSubmit }) => {
                   <ChevronLeft size={18} /> Back
                 </button>
                 <button type="submit" className="btn btn-primary" style={{background: 'var(--success)'}}>
-                  Generate Report <CheckCircle2 size={18} />
+                  {report ? 'Update Report' : 'Generate Report'} <CheckCircle2 size={18} />
                 </button>
               </div>
             </div>

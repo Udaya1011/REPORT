@@ -25,17 +25,14 @@
 .qc-report-paper {
   background: white;
   color: black;
-  width: 297mm;
-  min-height: 210mm;
+  width: 285mm;
+  min-height: 200mm;
   margin: 0 auto;
   border: 2px solid black;
   font-family: 'Arial Narrow', sans-serif;
   position: relative;
   padding: 10mm 5mm 5mm 5mm;
   box-sizing: border-box;
-  transform: scale(0.75);
-  transform-origin: top center;
-  margin-bottom: -150px;
   display: inline-block;
   text-align: left;
 }
@@ -116,9 +113,10 @@
 }
 
 .units-top-right {
-  flex: 2;
+  flex: 2.2; /* Narrowed the section to make the table more compact */
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .unit-box-exact {
@@ -128,7 +126,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 11pt;
+  font-size: 13pt; /* Increased from 11pt */
   text-align: center;
 }
 
@@ -183,8 +181,8 @@
 .checklist-table-exact .lbl {
   background: #f8fafc;
   font-weight: bold;
-  width: 17%;
-  /* Label takes 17% */
+  width: 12%;
+  /* Reduced from 17% */
 }
 
 .checklist-table-exact .opt {
@@ -399,14 +397,15 @@
 }
 
 .ls-col {
-  width: 180px;
+  width: 140px;
   text-align: left !important;
 }
 
 .point-label {
-  text-align: left;
+  text-align: left !important;
   font-weight: bold;
   font-size: 9.5pt;
+  padding-left: 10px !important;
 }
 
 /* blank write-in column — same width as spec column */

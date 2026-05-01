@@ -452,15 +452,56 @@ h1, h2, h3, h4 {
 }
 
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  @page landscape-page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
   .navbar, .header-actions, .print-btn, .no-print {
     display: none !important;
   }
   .main-content {
     padding: 0;
+    max-width: 100%;
   }
   .report-detail {
     box-shadow: none;
     padding: 0;
+  }
+  .report-view-wrapper {
+    padding: 0;
+  }
+  .report-scroll-container,
+  .report-scroll-inner {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    min-width: unset !important;
+  }
+  .qc-report-paper-single {
+    page-break-after: always;
+    break-after: page;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .summary-page {
+    page: auto;
+    width: 210mm !important;
+    height: 297mm !important;
+  }
+  .qc-report-paper-single:not(.summary-page) {
+    page: landscape-page;
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+  .print-preview-overlay {
+    position: static !important;
+    overflow: visible !important;
   }
 }
 

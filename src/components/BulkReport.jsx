@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Printer, ArrowLeft, Download, Loader2 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
-const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete }) => {
+const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete, summaryOnly = false, isDCView = false, dcInfo = null }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const containerRef = useRef(null);
   const sizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
@@ -18,16 +18,21 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete 
   const handleDownloadPDF = () => {
     if (isDownloading) return;
     setIsDownloading(true);
-    
+
     if (!containerRef.current) {
-        setIsDownloading(false);
-        return;
+      setIsDownloading(false);
+      return;
     }
-    
-    const elements = containerRef.current.querySelectorAll('.qc-report-paper-single');
+
+    const allElements = containerRef.current.querySelectorAll('.qc-report-paper-single');
+    // When downloading from DC view, only download the Delivery Report (summary pages)
+    const elements = (isDCView && summaryOnly !== false) 
+      ? Array.from(allElements).filter(el => el.classList.contains('summary-page'))
+      : Array.from(allElements);
+      
     if (!elements || elements.length === 0) {
-       setIsDownloading(false);
-       return;
+      setIsDownloading(false);
+      return;
     }
 
     const tempContainer = document.createElement('div');
@@ -37,21 +42,36 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete 
       const pageWrapper = document.createElement('div');
       pageWrapper.className = 'pdf-page-container';
       pageWrapper.style.width = '210mm';
-      pageWrapper.style.height = '295mm';
+      pageWrapper.style.height = '296.5mm';
       pageWrapper.style.position = 'relative';
       pageWrapper.style.overflow = 'hidden';
       pageWrapper.style.background = 'white';
+      pageWrapper.style.pageBreakAfter = 'always';
       
       const clone = page.cloneNode(true);
-      clone.style.transform = 'rotate(90deg) scale(1)';
-      clone.style.transformOrigin = 'top left';
-      clone.style.position = 'absolute';
-      clone.style.top = '0';
-      clone.style.left = '210mm';
-      clone.style.width = '297mm'; 
-      clone.style.height = '210mm';
-      clone.style.margin = '0';
-      clone.style.padding = '4mm';
+      
+      if (page.classList.contains('summary-page')) {
+        clone.style.position = 'absolute';
+        clone.style.top = '0';
+        clone.style.left = '0';
+        clone.style.width = '210mm';
+        clone.style.height = '297mm';
+        clone.style.transform = 'none';
+        clone.style.margin = '0';
+        clone.style.padding = '10mm';
+        clone.style.boxSizing = 'border-box';
+        clone.style.border = '2.5px solid #333';
+      } else {
+        clone.style.transform = 'rotate(90deg) scale(1)';
+        clone.style.transformOrigin = 'top left';
+        clone.style.position = 'absolute';
+        clone.style.top = '0';
+        clone.style.left = '210mm';
+        clone.style.width = '297mm';
+        clone.style.height = '210mm';
+        clone.style.margin = '0';
+        clone.style.padding = '4mm';
+      }
       
       pageWrapper.appendChild(clone);
       tempContainer.appendChild(pageWrapper);
@@ -65,7 +85,7 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete 
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'after', after: '.pdf-page-container' }
+      pagebreak: { mode: ['css', 'legacy'] }
     };
 
     html2pdf().set(opt).from(tempContainer).save().then(() => {
@@ -80,10 +100,82 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete 
     });
   };
 
+  const handleDownloadAll = () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+
+    if (!containerRef.current) {
+      setIsDownloading(false);
+      return;
+    }
+
+    const elements = Array.from(containerRef.current.querySelectorAll('.qc-report-paper-single'));
+    if (!elements || elements.length === 0) {
+      setIsDownloading(false);
+      return;
+    }
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.background = 'white';
+    
+    elements.forEach((page) => {
+      const pageWrapper = document.createElement('div');
+      pageWrapper.className = 'pdf-page-container';
+      pageWrapper.style.width = '210mm';
+      pageWrapper.style.height = '296.5mm';
+      pageWrapper.style.position = 'relative';
+      pageWrapper.style.overflow = 'hidden';
+      pageWrapper.style.background = 'white';
+      pageWrapper.style.pageBreakAfter = 'always';
+      const clone = page.cloneNode(true);
+      if (page.classList.contains('summary-page')) {
+        clone.style.position = 'absolute';
+        clone.style.top = '0';
+        clone.style.left = '0';
+        clone.style.width = '210mm';
+        clone.style.height = '297mm';
+        clone.style.transform = 'none';
+        clone.style.margin = '0';
+        clone.style.padding = '10mm';
+        clone.style.boxSizing = 'border-box';
+        clone.style.border = '2.5px solid #333';
+      } else {
+        clone.style.transform = 'rotate(90deg) scale(1)';
+        clone.style.transformOrigin = 'top left';
+        clone.style.position = 'absolute';
+        clone.style.top = '0';
+        clone.style.left = '210mm';
+        clone.style.width = '297mm';
+        clone.style.height = '210mm';
+        clone.style.margin = '0';
+        clone.style.padding = '4mm';
+      }
+      pageWrapper.appendChild(clone);
+      tempContainer.appendChild(pageWrapper);
+    });
+
+    document.body.appendChild(tempContainer);
+    const opt = {
+      margin: 0,
+      filename: `QC_Report_Full_${new Date().getTime()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
+    };
+    html2pdf().set(opt).from(tempContainer).save().then(() => {
+      document.body.removeChild(tempContainer);
+      setIsDownloading(false);
+    }).catch(err => {
+      console.error('PDF Error:', err);
+      if (tempContainer.parentNode) document.body.removeChild(tempContainer);
+      setIsDownloading(false);
+    });
+  };
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const [year, month, day] = dateStr.split('-');
-    return `${day}-${month}-${year}`;
+    return `${day}:${month}:${year}`;
   };
 
   const measurementRows = [
@@ -102,13 +194,141 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete 
     <div className="report-view-wrapper" ref={containerRef}>
       <div className="no-print header-actions">
         <button className="btn btn-secondary" onClick={onBack}><ArrowLeft size={18} /> Back</button>
-        <button className="btn btn-primary" onClick={handleDownloadPDF} disabled={isDownloading}>
-          {isDownloading ? <><Loader2 size={18} className="spin" /> Generating...</> : <><Download size={18} /> Download All</>}
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn btn-primary" onClick={handleDownloadPDF} disabled={isDownloading}>
+            {isDownloading 
+              ? <><Loader2 size={18} className="spin" /> Generating...</>
+              : isDCView 
+                ? <><Download size={18} /> Download Delivery Report</>
+                : <><Download size={18} /> Download All</>
+            }
+          </button>
+          {isDCView && (
+            <button className="btn btn-secondary" onClick={handleDownloadAll} disabled={isDownloading}>
+              <Download size={18} /> Download All Reports
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="report-scroll-container">
-        {reports.map((report, index) => {
+      <div className="report-scroll-container" style={{ minWidth: '100%', overflowX: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className="report-scroll-inner" style={{ minWidth: '297mm', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        
+        {/* --- Bulk Order Summary (Portrait Delivery Report) --- */}
+        {(() => {
+          const chunks = [];
+          for (let i = 0; i < reports.length; i += 20) chunks.push(reports.slice(i, i + 20));
+          
+          return chunks.map((chunk, chunkIdx) => {
+            let formattedDate = '';
+            let formattedDcNo = '';
+            if (isDCView && dcInfo) {
+               try {
+                 const [year, month, day] = dcInfo.date.split('-');
+                 formattedDate = `${day}:${month}:${year}`;
+               } catch(e) { formattedDate = dcInfo.date; }
+               formattedDcNo = dcInfo.name.replace(/DC-/i, '').trim();
+            }
+
+            return (
+            <div key={`summary-${chunkIdx}`} className="qc-report-paper-single summary-page" style={{ 
+              padding: '15mm 10mm', background: '#fff', width: '210mm', height: '297mm', margin: '0 auto 40px auto', 
+              border: '2.5px solid #333', fontFamily: "'Arial', sans-serif", position: 'relative', boxSizing: 'border-box',
+              display: 'flex', flexDirection: 'column'
+            }}>
+              {isDCView && dcInfo ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '2px solid black', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', width: '150px' }}>
+                    <div style={{ fontSize: '11pt', fontWeight: '900', color: '#1e293b' }}>DC NO: {formattedDcNo}</div>
+                    <div style={{ fontSize: '11pt', fontWeight: '900', color: '#1e293b' }}>DATE: {formattedDate}</div>
+                  </div>
+                  
+                  <h1 style={{ textAlign: 'center', textDecoration: 'underline', fontSize: '24pt', fontWeight: '950', margin: 0, color: '#1e293b', flex: 1 }}>
+                    DELIVERY REPORT
+                  </h1>
+
+                  <div style={{ textAlign: 'center', width: '150px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${window.location.origin}/?dc=${dcInfo.id || dcInfo._id}`)}`}
+                      alt="Scan to view DC"
+                      style={{ width: '60px', height: '60px', display: 'block' }}
+                    />
+                    <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '2px', width: '60px', textAlign: 'center' }}>Scan to view</div>
+                  </div>
+                </div>
+              ) : (
+                <h1 style={{ textAlign: 'center', textDecoration: 'underline', fontSize: '24pt', fontWeight: '950', marginBottom: '15px', color: '#1e293b' }}>
+                  TOTAL PIECES
+                </h1>
+              )}
+
+              {isDCView && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '20px' }}>
+                  <div style={{ flex: 1, border: '2px solid black', padding: '10px' }}>
+                    <div style={{ fontSize: '9pt', fontWeight: '900', borderBottom: '1px solid #ccc', marginBottom: '5px' }}>FROM:</div>
+                    <div style={{ fontSize: '11pt', fontWeight: 'bold' }}>ALFIYA APPARELS - TIRUPPUR</div>
+                  </div>
+                  <div style={{ flex: 1, border: '2px solid black', padding: '10px' }}>
+                    <div style={{ fontSize: '9pt', fontWeight: '900', borderBottom: '1px solid #ccc', marginBottom: '5px' }}>TO:</div>
+                    <div style={{ fontSize: '11pt', fontWeight: 'bold' }}>FRISKE KNITS - TIRUPPUR</div>
+                  </div>
+                </div>
+              )}
+
+              <table className="bulk-summary-table" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '2px solid black' }}>
+                <thead>
+                  <tr style={{ background: '#000', color: 'white', fontSize: '9pt' }}>
+                    <th style={{ width: '30px', border: '1px solid white', padding: '8px 2px' }}>S.NO</th>
+                    <th style={{ width: '115px', border: '1px solid white', padding: '8px 2px' }}>PO NO</th>
+                    <th style={{ border: '1px solid white', padding: '8px 2px' }}>PRODUCT</th>
+                    {sizes.map(s => <th key={s} style={{ width: '35px', border: '1px solid white' }}>{s}</th>)}
+                    <th style={{ width: '55px', border: '1px solid white' }}>TOTAL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chunk.map((item, idx) => (
+                    <tr key={item.id || idx} style={{ fontSize: '8.5pt' }}>
+                      <td style={{ padding: '6px 2px', border: '1px solid black', textAlign: 'center' }}>{(chunkIdx * 20) + idx + 1}</td>
+                      <td style={{ padding: '6px 4px', border: '1px solid black', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{item.po}</td>
+                      <td style={{ padding: '6px 4px', border: '1px solid black', fontSize: '8pt', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.productCode}</td>
+                      {sizes.map(s => <td key={s} style={{ padding: '6px 2px', border: '1px solid black', textAlign: 'center' }}>{item.quantities?.[s] || 0}</td>)}
+                      <td style={{ padding: '6px 2px', border: '1px solid black', textAlign: 'center', fontWeight: 'bold', background: '#f8fafc' }}>{Object.values(item.quantities || {}).reduce((a, b) => a + (b || 0), 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                {chunkIdx === chunks.length - 1 && (
+                  <tfoot>
+                    <tr style={{ background: '#000', color: '#fff', fontWeight: 'bold', fontSize: '12pt' }}>
+                      <td colSpan={3 + sizes.length} style={{ padding: '12px', border: '1px solid white', textAlign: 'right' }}>GRAND TOTAL PIECES:</td>
+                      <td style={{ padding: '12px', border: '1px solid white', textAlign: 'center' }}>{reports.reduce((acc, r) => acc + Object.values(r.quantities || {}).reduce((a, b) => a + (b || 0), 0), 0)}</td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+
+              {isDCView ? (
+                <div style={{ marginTop: 'auto', paddingTop: '60px', display: 'flex', justifyContent: 'space-between', paddingBottom: '20px' }}>
+                  <div style={{ width: '220px', textAlign: 'center' }}>
+                    <div style={{ borderTop: '2px solid #333', paddingTop: '10px', fontWeight: '900', color: '#1e293b' }}>PREPARED BY</div>
+                  </div>
+                  <div style={{ width: '220px', textAlign: 'center' }}>
+                    <div style={{ borderTop: '2px solid #333', paddingTop: '10px', fontWeight: '900', color: '#1e293b' }}>AUTHORIZED SIGNATORY</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginTop: 'auto', padding: '40px 0', textAlign: 'center' }}>
+                   <div style={{ fontSize: '18pt', fontWeight: 'bold', color: '#64748b' }}>TOTAL PIECES PREPARED FOR DELIVERY</div>
+                   <div style={{ fontSize: '48pt', fontWeight: '950', color: '#000' }}>
+                     {reports.reduce((acc, r) => acc + Object.values(r.quantities || {}).reduce((a, b) => a + (b || 0), 0), 0)}
+                   </div>
+                </div>
+              )}
+            </div>
+            );
+          });
+        })()}
+
+          {reports.map((report, index) => {
           const inspQty = report.quantities || {};
           const totalInsp = Object.values(inspQty).reduce((a, b) => a + (b || 0), 0);
           return (
@@ -118,120 +338,101 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete 
               padding: '10mm 5mm 5mm 5mm', boxSizing: 'border-box'
             }}>
               <div className="header-grid">
-                <div className="logo-section">
-                  <div className="brand-logo-exact"><div className="brand-main-text">MANIAC</div><div className="brand-sub-text">STREETWEAR</div></div>
+                <div className="logo-section" style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: '8px', padding: '5px' }}>
+                  <div className="brand-logo-exact">
+                    <div className="brand-main-text">MANIAC</div>
+                    <div className="brand-sub-text">STREETWEAR</div>
+                  </div>
+                  <div style={{ fontSize: '9pt', fontWeight: '950', textAlign: 'center', border: '1.5px solid black', width: '100%', padding: '2px 0', background: '#f8fafc' }}>
+                    QC: {report.qamName?.trim() || 'GANESH'}
+                  </div>
                 </div>
-                <div className="title-section">
+                <div className="title-section" style={{ flex: 4, borderRight: '1.5px solid black' }}>
                   <div className="company-name-exact">FRISKE KNITS PRIVATE LIMITED</div>
                   <div className="report-type-exact">FINAL INSPECTION REPORT</div>
-                  <div style={{ fontWeight: '900', fontSize: '13pt', color: '#000' }}>PO NO : {report.po}</div>
                 </div>
-                <div className="units-top-right" style={{ flex: 1.8 }}>
-                  <table className="size-qty-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid black' }}>
+                <div className="metadata-section" style={{ flex: 1.8, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px' }}>
+                  <div className="brand-logo-exact" style={{ width: '100%', minHeight: '60px', padding: '5px 8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                    <div className="brand-main-text" style={{ fontSize: '20pt' }}>{report.unitName?.trim() || 'HA'}</div>
+                    <div style={{ fontSize: '12pt', fontWeight: '950', borderTop: '2px solid black', width: '100%', marginTop: '5px', paddingTop: '3px', textAlign: 'center' }}>PO: {report.po}</div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', borderBottom: '2px solid black' }}>
+                <table className="checklist-table-exact" style={{ flex: 1, borderBottom: 'none' }}>
+                  <tbody>
+                    <tr><td className="lbl">DATE</td><td colSpan="2" className="val">{formatDate(report.date)}</td><td className="lbl">BARCODE</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">W/CARE LABLE</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
+                    <tr><td className="lbl">BRAND</td><td colSpan="2" className="val">{report.brand}</td><td className="lbl">PRINT POSITION</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">GSM</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
+                    <tr><td className="lbl">MAIN LABLE</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">WASHING QUALITY</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">IRONING-PACKING</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
+                    <tr><td className="lbl">FLAGE LABLE</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">STITCHING</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">POLY BAG</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
+                    <tr><td className="lbl">HANG TAG</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">SPI</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">FABRIC</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
+                  </tbody>
+                </table>
+                <div style={{ width: '30%', borderLeft: '2px solid black' }}>
+                   <table className="size-qty-table" style={{ width: '100%', height: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                     <thead>
-                      <tr style={{ fontSize: '7pt', background: '#f0f0f0' }}>
-                        <th style={{ border: '1px solid black' }}>Size</th><th style={{ border: '1px solid black' }}>Order</th><th style={{ border: '1px solid black' }}>Cut</th><th style={{ border: '1px solid black' }}>Insp</th>
+                      <tr style={{ fontSize: '8pt', background: '#f0f0f0', fontWeight: '900', height: '30px' }}>
+                        <th style={{ borderBottom: '1px solid black', borderRight: '1px solid black', width: '35px' }}>Size</th>
+                        <th style={{ borderBottom: '1px solid black', borderRight: '1px solid black' }}>ORD QTY</th>
+                        <th style={{ borderBottom: '1px solid black', borderRight: '1px solid black' }}>CUT QTY</th>
+                        <th style={{ borderBottom: '1px solid black' }}>INSP QTY</th>
                       </tr>
                     </thead>
                     <tbody>
                       {sizes.map(s => (
-                        <tr key={s} style={{ fontSize: '8pt', textAlign: 'center' }}>
-                          <td style={{ border: '1px solid black', fontWeight: 'bold' }}>{s}</td>
-                          <td style={{ border: '1px solid black' }}>{report.orderQty?.[s] || ''}</td>
-                          <td style={{ border: '1px solid black' }}>{report.cuttingQty?.[s] || ''}</td>
-                          <td style={{ border: '1px solid black', fontWeight: 'bold' }}>{inspQty[s] || ''}</td>
+                        <tr key={s} style={{ fontSize: '13pt', height: '30px', textAlign: 'center' }}>
+                          <td style={{ borderBottom: '1px solid black', borderRight: '1px solid black', fontWeight: '950', background: '#f9f9f9' }}>{s}</td>
+                          <td style={{ borderBottom: '1px solid black', borderRight: '1px solid black', fontWeight: 'bold' }}>{report.orderQty?.[s] || ''}</td>
+                          <td style={{ borderBottom: '1px solid black', borderRight: '1px solid black', fontWeight: 'bold' }}>{report.cuttingQty?.[s] || ''}</td>
+                          <td style={{ borderBottom: '1px solid black', fontWeight: '950' }}>{inspQty[s] || ''}</td>
                         </tr>
                       ))}
-                      <tr style={{ fontSize: '8pt', textAlign: 'center', fontWeight: 'bold', background: '#e0e0e0' }}>
-                        <td style={{ border: '1px solid black' }}>TOTAL</td>
-                        <td style={{ border: '1px solid black' }}>{Object.values(report.orderQty || {}).reduce((a,b)=>a+(b||0),0) || ''}</td>
-                        <td style={{ border: '1px solid black' }}>{Object.values(report.cuttingQty || {}).reduce((a,b)=>a+(b||0),0) || ''}</td>
-                        <td style={{ border: '1px solid black' }}>{totalInsp}</td>
+                      <tr style={{ fontSize: '13pt', height: '30px', textAlign: 'center', fontWeight: '950', background: '#e0e0e0' }}>
+                        <td style={{ borderRight: '1px solid black' }}>TOTAL</td>
+                        <td style={{ borderRight: '1px solid black' }}>{Object.values(report.orderQty || {}).reduce((a,b)=>a+(b||0),0) || ''}</td>
+                        <td style={{ borderRight: '1px solid black' }}>{Object.values(report.cuttingQty || {}).reduce((a,b)=>a+(b||0),0) || ''}</td>
+                        <td>{totalInsp}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
-              <table className="checklist-table-exact">
-                <tbody>
-                  <tr><td className="lbl">DATE</td><td colSpan="2" className="val">{formatDate(report.date)}</td><td className="lbl">BARCODE</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">W/CARE LABLE</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
-                  <tr><td className="lbl">BRAND</td><td colSpan="2" className="val">{report.brand}</td><td className="lbl">PRINT POSITION</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">GSM</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
-                  <tr><td className="lbl">MAIN LABLE</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">WASHING QUALITY</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">IRONING-PACKING</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
-                  <tr><td className="lbl">FLAGE LABLE</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">STITCHING</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">POLY BAG</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
-                  <tr><td className="lbl">HANG TAG</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">SPI</td><td className="opt">Okay</td><td className="opt">Not Okay</td><td className="lbl">FABRIC</td><td className="opt">Okay</td><td className="opt">Not Okay</td></tr>
-                </tbody>
-              </table>
               <div className="po-bar-exact">
                 <div className="po-info-combined"><div className="info-group"><span className="lbl-dark">PO NO</span><span className="val">{report.po}</span></div><div className="info-group"><span className="lbl-dark">PRODUCT CODE</span><span className="val">{report.productCode}</span></div></div>
                 <div className="status-labels"><div className="stat">PASS</div><div className="stat">FAIL</div><div className="stat" style={{ fontSize: '10pt', background: '#f8fafc', fontWeight: 'bold' }}>TOTAL : {totalInsp}</div><div className="stat">TOTAL BOX</div></div>
               </div>
               <div className="measurement-area">
                 <table className="measurement-table-exact">
-                  <thead><tr><th className="ls-col"></th>{sizes.map(s => (<React.Fragment key={s}><th>{s}</th><th className="meas-writein-hdr"></th></React.Fragment>))}</tr></thead>
-                  <tbody>{measurementRows.map((row, idx) => (<tr key={idx}><td className="point-label">{row.label}</td>{sizes.map(s => (<React.Fragment key={s}><td>{row.specs[s]}</td><td className="meas-writein-box"></td></React.Fragment>))}</tr>))}</tbody>
+                  <thead>
+                    <tr>
+                      <th className="ls-col"></th>
+                      {sizes.map(s => (
+                        <th key={s} colSpan="2">{s}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {measurementRows.map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="point-label">{row.label}</td>
+                        {sizes.map(s => (
+                          <React.Fragment key={s}>
+                            <td style={{ borderRight: 'none' }}>{row.specs[s]}</td>
+                            <td className="meas-writein-box" style={{ borderLeft: 'none' }}></td>
+                          </React.Fragment>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
               <div className="remarks-area-exact"><div className="label">Remarks</div><div className="value">{report.remarks}</div></div>
               <div className="signature-area-exact"><div className="sign-box">UNIT INCHARGE</div><div className="sign-box">MD</div><div className="sign-box">INSPECTION Q.A</div></div>
-              <div style={{ position: 'absolute', bottom: '5px', right: '10px', fontSize: '8pt', color: '#000', fontWeight: '900' }}>TEXTRACK</div>
+              <div style={{ textAlign: 'right', fontSize: '9pt', color: '#000', fontWeight: '950', marginTop: '2px' }}>TEXTRACK</div>
             </div>
           );
         })}
-
-        {/* --- Bulk Order Summary (Landscape) --- */}
-        {(() => {
-          const chunks = [];
-          for (let i = 0; i < reports.length; i += 15) chunks.push(reports.slice(i, i + 15));
-          
-          return chunks.map((chunk, chunkIdx) => (
-            <div key={`summary-${chunkIdx}`} className="qc-report-paper-single" style={{ 
-              padding: '40px', background: '#fff', width: '297mm', height: '210mm', margin: '0 auto 40px auto', 
-              border: '2px solid black', fontFamily: "'Arial Narrow', sans-serif", position: 'relative', boxSizing: 'border-box'
-            }}>
-              <h2 style={{marginBottom: '2rem', textAlign: 'center', textDecoration: 'underline', fontSize: '20pt'}}>
-                Bulk Order Summary {chunks.length > 1 ? `(Part ${chunkIdx + 1})` : ''}
-              </h2>
-
-              <table className="bulk-summary-table" style={{width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
-                <thead>
-                  <tr style={{background: '#000', color: 'white', fontSize: '9pt'}}>
-                    <th style={{width: '40px', border: '1px solid black', padding: '8px'}}>S.NO</th>
-                    <th style={{width: '120px', border: '1px solid black', padding: '8px'}}>PO NO</th>
-                    <th style={{border: '1px solid black', padding: '8px'}}>PRODUCT</th>
-                    {sizes.map(s => <th key={s} style={{width: '35px', border: '1px solid black'}}>{s}</th>)}
-                    <th style={{width: '50px', border: '1px solid black', background: '#000'}}>TOTAL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {chunk.map((item, idx) => (
-                    <tr key={item.id || idx}>
-                      <td style={{padding: '10px', border: '1px solid black', textAlign: 'center'}}>{(chunkIdx * 15) + idx + 1}</td>
-                      <td style={{padding: '10px', border: '1px solid black', fontWeight: 'bold'}}>{item.po}</td>
-                      <td style={{padding: '10px', border: '1px solid black'}}>{item.productCode}</td>
-                      {sizes.map(s => <td key={s} style={{padding: '10px', border: '1px solid black', textAlign: 'center'}}>{item.quantities?.[s] || 0}</td>)}
-                      <td style={{padding: '10px', border: '1px solid black', textAlign: 'center', fontWeight: 'bold', background: '#f8fafc'}}>{Object.values(item.quantities || {}).reduce((a,b)=>a+b,0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                {chunkIdx === chunks.length - 1 && (
-                  <tfoot>
-                    <tr style={{background: '#f1f5f9', fontWeight: 'bold', fontSize: '14pt'}}>
-                      <td colSpan={3 + sizes.length} style={{padding: '15px', border: '1px solid black', textAlign: 'right'}}>GRAND TOTAL PIECES:</td>
-                      <td style={{padding: '15px', border: '1px solid black', textAlign: 'center', background: '#000', color: '#fff'}}>{reports.reduce((acc, r) => acc + Object.values(r.quantities || {}).reduce((a, b) => a + (b || 0), 0), 0)}</td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
-
-              {chunkIdx === chunks.length - 1 && (
-                <div style={{marginTop: '4rem', display: 'flex', justifyContent: 'space-between'}}>
-                   <div style={{borderTop: '1px solid black', width: '200px', textAlign: 'center', paddingTop: '10px', fontWeight: 'bold'}}>PREPARED BY</div>
-                   <div style={{borderTop: '1px solid black', width: '200px', textAlign: 'center', paddingTop: '10px', fontWeight: 'bold'}}>AUTHORIZED SIGNATORY</div>
-                </div>
-              )}
-            </div>
-          ));
-        })()}
+        </div>
       </div>
     </div>
   );

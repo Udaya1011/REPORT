@@ -3,13 +3,14 @@ import ReportList from './components/ReportList';
 import ReportForm from './components/ReportForm';
 import ReportDetails from './components/ReportDetails';
 import BulkReport from './components/BulkReport';
+import DCPage from './components/DCPage';
 import { Shield, Bell, User, Search } from 'lucide-react';
 
 function App() {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [view, setView] = useState('list'); // 'list' or 'details'
+  const [view, setView] = useState('list'); // 'list', 'details', or 'dc'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,13 +20,23 @@ function App() {
   const [bulkReports, setBulkReports] = useState([]);
   const [isAutoDownload, setIsAutoDownload] = useState(false);
   const [isDeliveryMode, setIsDeliveryMode] = useState(false);
+  const [editingReport, setEditingReport] = useState(null);
+  const [selectedDC, setSelectedDC] = useState(null);
+  const [downloadDcInfo, setDownloadDcInfo] = useState(null);
+  const [dcCollections, setDcCollections] = useState([]);
+  const [isCreatingDC, setIsCreatingDC] = useState(false);
+  const [selectedForDC, setSelectedForDC] = useState([]);
 
   // Dynamically select API URL based on environment (Localhost vs Render)
   const API_URL = import.meta.env.PROD
     ? 'https://report-backend-1-2iec.onrender.com/api/reports'
     : 'http://localhost:5000/api/reports';
 
-  // Load reports from MongoDB
+  const DC_API_URL = import.meta.env.PROD
+    ? 'https://report-backend-1-2iec.onrender.com/api/dcs'
+    : 'http://localhost:5000/api/dcs';
+
+  // Load reports and DCs from MongoDB
   const fetchReports = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -43,12 +54,36 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [API_URL]);
+
+  const fetchDCs = useCallback(async () => {
+    try {
+      const response = await fetch(DC_API_URL);
+      if (!response.ok) throw new Error('Failed to fetch DCs');
+      const data = await response.json();
+      const loadedDCs = Array.isArray(data) ? data : [];
+      setDcCollections(loadedDCs);
+
+      // Handle QR Code Scans: If URL has ?dc=ID, automatically open that DC
+      const params = new URLSearchParams(window.location.search);
+      const dcParam = params.get('dc');
+      if (dcParam && loadedDCs.length > 0) {
+        const matchedDC = loadedDCs.find(dc => dc._id === dcParam || dc.id === dcParam);
+        if (matchedDC) {
+          setSelectedDC(matchedDC);
+          setView('dc');
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching DCs:', err);
+    }
+  }, [DC_API_URL]);
 
   // Load on mount
   useEffect(() => {
     fetchReports();
-  }, [fetchReports]);
+    fetchDCs();
+  }, [fetchReports, fetchDCs]);
 
   const handleAddReport = async (newReport) => {
     setLoading(true);
@@ -103,6 +138,69 @@ function App() {
     }
   };
 
+  const handleEditReport = (report) => {
+    setEditingReport(report);
+    setShowForm(true);
+  };
+
+  const handleUpdateReport = async (id, updatedData) => {
+    setLoading(true);
+    try {
+      console.log('Frontend: Updating report in MongoDB:', id, updatedData);
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update report');
+
+      const savedReport = await response.json();
+      console.log('Report updated in MongoDB:', savedReport);
+
+      setReports(prev => prev.map(r => r.id === id ? savedReport : r));
+      if (selectedReport && selectedReport.id === id) setSelectedReport(savedReport);
+      setShowForm(false);
+      setEditingReport(null);
+    } catch (err) {
+      console.error('Error updating report:', err);
+      alert('Failed to update report: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveDC = async (reportIds) => {
+    setLoading(true);
+    try {
+      const newDC = {
+        name: `DC-${dcCollections.length + 1}`,
+        count: reportIds.length,
+        date: todayStr,
+        reportIds: reportIds
+      };
+      
+      const response = await fetch(DC_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDC)
+      });
+      
+      if (!response.ok) throw new Error('Failed to save DC');
+
+      const savedDC = await response.json();
+      setDcCollections(prev => [savedDC, ...prev]);
+      setIsCreatingDC(false);
+      setSelectedForDC([]);
+      setView('dc');
+    } catch (err) {
+      console.error('Error saving DC:', err);
+      alert('Failed to save DC batch');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredReports = reports.filter(report => {
     const matchesSearch =
       report.productCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -122,6 +220,31 @@ function App() {
             <Shield size={20} />
           </div>
           <span>TexTrack QC</span>
+        </div>
+
+        <div className="nav-links" style={{ display: 'flex', gap: '2rem', marginLeft: '3rem', flex: 1 }}>
+          <span 
+            onClick={() => { setView('list'); }} 
+            style={{ 
+              cursor: 'pointer', 
+              fontWeight: view === 'list' ? 'bold' : '500',
+              color: view === 'list' ? 'var(--accent)' : 'var(--text-main)',
+              fontSize: '0.95rem'
+            }}
+          >
+            Dashboard
+          </span>
+          <span 
+            onClick={() => { setView('dc'); }} 
+            style={{ 
+              cursor: 'pointer', 
+              fontWeight: view === 'dc' ? 'bold' : '500',
+              color: view === 'dc' ? 'var(--accent)' : 'var(--text-main)',
+              fontSize: '0.95rem'
+            }}
+          >
+            DC
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -172,29 +295,68 @@ function App() {
             setFilterDate={setFilterDate}
             onSelectReport={handleSelectReport}
             onDeleteReport={handleDeleteReport}
-            onAddNew={() => setShowForm(true)}
+            onEditReport={handleEditReport}
+            onAddNew={() => { setEditingReport(null); setShowForm(true); }}
             onPrintAll={(customReports, isDelivery = false) => {
               setBulkReports(customReports || filteredReports);
               setIsDeliveryMode(isDelivery);
               setIsAutoDownload(true);
             }}
+            isCreatingDC={isCreatingDC}
+            onSaveDC={handleSaveDC}
+            usedReportIds={dcCollections.flatMap(dc => dc.reportIds || [])}
           />
+        ) : view === 'dc' ? (
+          selectedDC ? (
+            <div className="dc-page-view">
+               <BulkReport 
+                 reports={reports.filter(r => selectedDC.reportIds?.includes(r.id))} 
+                 onBack={() => setSelectedDC(null)} 
+                 autoDownload={false}
+                 summaryOnly={false}
+                 isDCView={true}
+                 dcInfo={selectedDC}
+               />
+            </div>
+          ) : (
+            <DCPage 
+              dcList={dcCollections}
+              onSelectDC={(dc) => setSelectedDC(dc)}
+              onDownloadDC={(dc) => {
+                setBulkReports(reports.filter(r => dc.reportIds?.includes(r.id)));
+                setDownloadDcInfo(dc);
+                setIsAutoDownload(true);
+              }}
+              onAddNewDC={() => {
+                setIsCreatingDC(true);
+                setView('list');
+              }}
+            />
+          )
         ) : (
           <ReportDetails
             report={selectedReport}
             onBack={() => setView('list')}
           />
-        )}
+        ) }
 
         {/* Hidden Bulk Report for background downloads */}
         {isAutoDownload && (
           <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '297mm' }}>
             <BulkReport
               reports={bulkReports}
-              onBack={() => setIsAutoDownload(false)}
+              onBack={() => {
+                setIsAutoDownload(false);
+                setDownloadDcInfo(null);
+              }}
               autoDownload={true}
-              isDelivery={isDeliveryMode}
-              onDownloadComplete={() => setIsAutoDownload(false)}
+              summaryOnly={!!downloadDcInfo}
+              isDCView={!!downloadDcInfo}
+              dcInfo={downloadDcInfo}
+              onDownloadComplete={() => {
+                setIsAutoDownload(false);
+                setDownloadDcInfo(null);
+              }}
             />
           </div>
         )}
@@ -202,8 +364,9 @@ function App() {
 
       {showForm && (
         <ReportForm
-          onClose={() => setShowForm(false)}
-          onSubmit={handleAddReport}
+          report={editingReport}
+          onClose={() => { setShowForm(false); setEditingReport(null); }}
+          onSubmit={editingReport ? (data) => handleUpdateReport(editingReport.id, data) : handleAddReport}
         />
       )}
 
