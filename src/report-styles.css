@@ -409,6 +409,16 @@
   font-size: 9.5pt;
 }
 
+/* blank write-in column — same width as spec column */
+.meas-writein-hdr {
+  background: white;
+}
+
+.meas-writein-box {
+  background: white;
+  border: 1px solid black !important;
+}
+
 .qty-row-exact {
   background: #f8fafc;
 }
@@ -686,4 +696,392 @@
   color: #fff !important;
   font-weight: 900 !important;
   border: 1px solid white !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NEW ReportDetails CLASSES (rpt-* prefix)
+   These are added ALONGSIDE the old classes for BulkReport.
+   ReportDetails.jsx uses zero padding on .qc-report-paper so
+   override the old padding rule here:
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Paper override for new layout ── */
+.qc-report-paper.rpt-paper {
+  padding: 0 !important;
+  min-height: 205mm;
+  margin-bottom: -155px;
+}
+
+/* ── HEADER ROW: Logo | Title | Size-Qty ── */
+.rpt-header-row {
+  display: grid;
+  grid-template-columns: 95px 1fr 165px;
+  border-bottom: 1.5px solid #222;
+  min-height: 62px;
+}
+
+.rpt-logo-cell {
+  border-right: 1.5px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+}
+
+.brand-logo-box {
+  border: 2px solid black;
+  padding: 3px 8px;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.brand-logo-main {
+  font-size: 18pt;
+  font-weight: 900;
+  letter-spacing: -1px;
+  text-transform: lowercase;
+  font-family: 'Arial Black', Arial, sans-serif;
+  color: #000;
+}
+
+.brand-logo-sub {
+  font-size: 6pt;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #d48f00;
+  text-transform: uppercase;
+}
+
+.rpt-title-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1.5px solid #222;
+  padding: 4px 10px;
+  text-align: center;
+}
+
+.rpt-company-name {
+  font-size: 13pt;
+  font-weight: bold;
+  font-style: italic;
+  color: #000;
+}
+
+.rpt-report-title {
+  font-size: 14pt;
+  font-weight: bold;
+  text-decoration: underline;
+  letter-spacing: 1px;
+  color: #000;
+  margin-top: 2px;
+}
+
+/* ── Size-Qty table in header ── */
+.rpt-size-grid-cell { padding: 0; }
+
+.size-qty-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+}
+
+.size-qty-table th,
+.size-qty-table td {
+  border: 1px solid #777;
+  text-align: center;
+  font-size: 7pt;
+  padding: 1px 2px;
+  height: 15px;
+}
+
+.size-qty-table thead th {
+  background: #efefef;
+  font-weight: bold;
+  font-size: 6.5pt;
+  padding: 2px 1px;
+  line-height: 1.1;
+}
+
+.sgth-size  { width: 24px; }
+.sgth-order { width: 34px; }
+.sgth-cut   { width: 32px; }
+.sgth-insp  { width: 34px; }
+
+.sgt-size-label { font-weight: bold; background: #f5f5f5; }
+.sgt-order-val  { background: #dbeafe; font-weight: 600; }
+.sgt-cut-val    { background: #fef9c3; font-weight: 600; }
+.sgt-insp-val   { background: #dcfce7; font-weight: bold; }
+
+.sgt-total-row td {
+  font-weight: bold;
+  background: #e0e8f8;
+}
+
+/* ── Checklist Wrapper (table + right name panel) ── */
+.rpt-checklist-wrapper {
+  display: flex;
+  border-bottom: 1.5px solid #222;
+}
+
+.rpt-checklist-table {
+  flex: 1;
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 0;
+}
+
+.rpt-checklist-table td {
+  border: 1px solid #888;
+  height: 32px;
+  padding: 2px 4px;
+  vertical-align: middle;
+  font-size: 7.5pt;
+  box-sizing: border-box;
+  overflow: hidden;
+  line-height: 1.15;
+}
+
+.ck-label {
+  background: #f0f0f0;
+  font-weight: bold;
+  font-size: 7pt;
+  width: 12%;
+  padding: 2px 3px;
+}
+
+.ck-val {
+  width: 10%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 7pt;
+}
+
+.ck-opt {
+  width: 7%;
+  text-align: center;
+  font-size: 6.5pt;
+  color: #222;
+}
+
+/* Right panel: UNIT NAME / HA / QAM NAME */
+.rpt-right-panel {
+  width: 115px;
+  flex-shrink: 0;
+  border-left: 1.5px solid #222;
+  display: flex;
+  flex-direction: column;
+}
+
+.rpt-panel-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  text-align: center;
+  border-bottom: 1px solid #888;
+}
+
+.rpt-panel-row:last-child { border-bottom: none; }
+
+.rpt-panel-unit-name { font-size: 10.5pt; }
+.rpt-panel-ha        { font-size: 19pt; }
+.rpt-panel-qam-name  { font-size: 10.5pt; }
+
+/* ── PO Bar ── */
+.rpt-po-bar {
+  display: flex;
+  border-bottom: 1.5px solid #222;
+  height: 26px;
+  align-items: stretch;
+}
+
+.rpt-po-no-cell {
+  width: 75px;
+  flex-shrink: 0;
+  border-right: 1.5px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  font-weight: 900;
+  font-size: 8pt;
+  padding: 0 4px;
+}
+
+.rpt-product-code-cell {
+  flex: 1;
+  border-right: 1.5px solid #222;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  background: #f0f0f0;
+  gap: 8px;
+}
+
+.rpt-pc-label {
+  font-weight: 900;
+  font-size: 8pt;
+}
+
+.rpt-pc-value {
+  font-weight: bold;
+  font-size: 8pt;
+}
+
+.rpt-pass-cell,
+.rpt-fail-cell,
+.rpt-final-cell,
+.rpt-totalbox-cell {
+  width: 50px;
+  flex-shrink: 0;
+  border-right: 1px solid #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 7pt;
+  text-align: center;
+}
+
+.rpt-totalbox-cell {
+  border-right: none;
+  width: 65px;
+}
+
+/* ── Measurement Table: label | (spec + write-box) × 7 sizes ── */
+.rpt-measurement-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-bottom: 1.5px solid #222;
+  table-layout: fixed;
+}
+
+.rpt-measurement-table th,
+.rpt-measurement-table td {
+  border: 1px solid #888;
+  padding: 1px 2px;
+  text-align: center;
+  font-size: 7.5pt;
+  height: 18px;
+}
+
+.rpt-measurement-table th {
+  background: #f8f8f8;
+  font-weight: bold;
+  font-size: 8pt;
+  height: 20px;
+}
+
+/* Label column */
+.meas-label-col {
+  text-align: left !important;
+  width: 102px;
+  font-weight: bold;
+  background: #f8f8f8;
+}
+
+/* Spec (pre-printed) column */
+.meas-sz-spec   { width: 26px; background: #f8f8f8; }
+/* Blank write-in box */
+.meas-sz-actual { width: 20px; background: #fff; }
+
+.meas-point {
+  text-align: left;
+  font-weight: bold;
+  font-size: 7.5pt;
+  padding-left: 3px;
+}
+
+.meas-spec-val  { background: #f8f8f8; }
+.meas-write-box { background: #ffffff; }
+.meas-blue      { color: #1d4ed8; }
+
+/* Total row (black) */
+.meas-total-row td {
+  background: #000 !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 7.5pt;
+}
+
+.meas-total-val {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/* ── Remarks ── */
+.rpt-remarks-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1.5px solid #222;
+  min-height: 22px;
+  padding: 2px 8px;
+  gap: 10px;
+}
+
+.rpt-remarks-label {
+  font-weight: bold;
+  font-size: 8pt;
+  white-space: nowrap;
+  border-right: 1px solid #aaa;
+  padding-right: 10px;
+}
+
+.rpt-remarks-value { flex: 1; }
+
+/* ── Blue dashed line ── */
+.rpt-blue-dashed-line {
+  height: 0;
+  border-top: 2px dashed #3b82f6;
+  margin: 3px 0;
+}
+
+/* ── Signature bar ── */
+.rpt-signature-bar {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid #222;
+  border-top: none;
+  height: 34px;
+}
+
+.rpt-sign-cell {
+  flex: 2;
+  border-right: 1px solid #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 7.5pt;
+  text-align: center;
+}
+
+.rpt-sign-cell:last-child { border-right: none; }
+
+.rpt-sign-page-cell {
+  width: 46px;
+  flex-shrink: 0;
+  border-right: 1px solid #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rpt-sign-qa { flex: 3; }
+
+.rpt-page-label { font-size: 6.5pt; color: #666; }
+
+/* ── Print overrides for new layout ── */
+@media print {
+  .rpt-measurement-table th,
+  .rpt-measurement-table td {
+    font-size: 7pt !important;
+  }
+  .rpt-checklist-table td {
+    font-size: 7pt !important;
+    height: 28px !important;
+  }
 }
