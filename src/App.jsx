@@ -4,7 +4,7 @@ import ReportForm from './components/ReportForm';
 import ReportDetails from './components/ReportDetails';
 import BulkReport from './components/BulkReport';
 import DCPage from './components/DCPage';
-import { Shield, Bell, User, Search } from 'lucide-react';
+import { Shield, Bell, User, Search, Loader2, Download } from 'lucide-react';
 
 function App() {
   const [reports, setReports] = useState([]);
@@ -27,15 +27,17 @@ function App() {
   const [isCreatingDC, setIsCreatingDC] = useState(false);
   const [selectedForDC, setSelectedForDC] = useState([]);
   const [isPdfScanMode, setIsPdfScanMode] = useState(false);
+  const [pdfDownloadTriggered, setPdfDownloadTriggered] = useState(false);
 
   // Dynamically select API URL based on environment (Localhost vs Render)
+  // Use window.location.hostname to allow mobile devices on local network to reach the backend
   const API_URL = import.meta.env.PROD
     ? 'https://report-backend-1-2iec.onrender.com/api/reports'
-    : 'http://localhost:5000/api/reports';
+    : `http://${window.location.hostname}:5000/api/reports`;
 
   const DC_API_URL = import.meta.env.PROD
     ? 'https://report-backend-1-2iec.onrender.com/api/dcs'
-    : 'http://localhost:5000/api/dcs';
+    : `http://${window.location.hostname}:5000/api/dcs`;
 
   // Load reports and DCs from MongoDB
   const fetchReports = useCallback(async () => {
@@ -69,15 +71,25 @@ function App() {
       const params = new URLSearchParams(window.location.search);
       const dcParam = params.get('dc');
       const viewParam = params.get('view');
-      if (dcParam && loadedDCs.length > 0) {
-        const matchedDC = loadedDCs.find(dc => dc._id === dcParam || dc.id === dcParam);
-        if (matchedDC) {
-          setSelectedDC(matchedDC);
-          if (viewParam === 'pdf') {
-            setIsPdfScanMode(true);
+      
+      if (dcParam) {
+        if (loadedDCs.length > 0) {
+          const matchedDC = loadedDCs.find(dc => dc._id === dcParam || dc.id === dcParam);
+          if (matchedDC) {
+            setSelectedDC(matchedDC);
+            if (viewParam === 'pdf') {
+              setIsPdfScanMode(true);
+            } else {
+              setView('dc');
+            }
           } else {
-            setView('dc');
+            console.warn(`DC with ID ${dcParam} not found in database.`);
+            // If we are in PDF scan mode but DC not found, we should still show something
+            if (viewParam === 'pdf') setIsPdfScanMode(true);
           }
+        } else if (dcParam && viewParam === 'pdf') {
+          // If we haven't loaded DCs yet or it failed, but we are in PDF mode
+          setIsPdfScanMode(true);
         }
       }
     } catch (err) {
@@ -218,23 +230,78 @@ function App() {
     return matchesSearch && matchesDate;
   });
 
-  if (isPdfScanMode && selectedDC) {
+  if (isPdfScanMode) {
     return (
-      <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'system-ui' }}>
-        <Loader2 size={48} className="spin" color="var(--accent)" style={{ marginBottom: '20px' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text)' }}>Opening PDF Document...</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Please wait while the delivery report is generated.</p>
+      <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: '1.5rem', textAlign: 'center' }}>
+        <div style={{ background: 'white', padding: '2.5rem', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', maxWidth: '400px', width: '100%' }}>
+          <div style={{ width: '64px', height: '64px', background: '#eff6ff', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', margin: '0 auto 1.5rem auto' }}>
+            <Download size={32} />
+          </div>
+          
+          {loading ? (
+            <>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '0.5rem' }}>Loading Report...</h1>
+              <p style={{ color: '#64748b', marginBottom: '2rem' }}>Please wait while we fetch the delivery data.</p>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                <Loader2 size={32} className="spin" />
+              </div>
+            </>
+          ) : !selectedDC ? (
+            <>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#dc2626', marginBottom: '0.5rem' }}>DC Not Found</h1>
+              <p style={{ color: '#64748b', marginBottom: '2rem' }}>The delivery report link you scanned is invalid or the data has been removed.</p>
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '0.5rem' }}>Delivery Report</h1>
+              <p style={{ color: '#64748b', marginBottom: '2rem', lineHeight: '1.5' }}>
+                DC NO: {selectedDC?.name?.replace(/DC-/i, '') || 'Unknown'}<br/>
+                Date: {selectedDC?.date || 'N/A'}<br/>
+                Ready for download
+              </p>
+              
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setPdfDownloadTriggered(true)}
+                disabled={pdfDownloadTriggered}
+                style={{ width: '100%', padding: '1rem', fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                {pdfDownloadTriggered ? (
+                  <><Loader2 size={20} className="spin" /> Generating PDF...</>
+                ) : (
+                  <><Download size={20} /> Download PDF</>
+                )}
+              </button>
+            </>
+          )}
+          
+          <button 
+            onClick={() => {
+              setIsPdfScanMode(false);
+              setPdfDownloadTriggered(false);
+              setView('list');
+            }}
+            style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.9rem', textDecoration: 'underline' }}
+          >
+            Go to App Dashboard
+          </button>
+        </div>
+
         <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '297mm' }}>
-          <BulkReport
-            reports={reports.filter(r => selectedDC.reportIds?.includes(r.id))}
-            onBack={() => setIsPdfScanMode(false)}
-            autoDownload={true}
-            summaryOnly={false}
-            isDCView={true}
-            dcInfo={selectedDC}
-            autoOpenBlob={true}
-            onDownloadComplete={() => setIsPdfScanMode(false)}
-          />
+          {pdfDownloadTriggered && (
+            <BulkReport
+              reports={reports.filter(r => selectedDC?.reportIds?.includes(r.id))}
+              onBack={() => setIsPdfScanMode(false)}
+              autoDownload={true}
+              summaryOnly={false}
+              isDCView={true}
+              dcInfo={selectedDC}
+              autoOpenBlob={false}
+              onDownloadComplete={() => {
+                setPdfDownloadTriggered(false);
+              }}
+            />
+          )}
         </div>
       </div>
     );
