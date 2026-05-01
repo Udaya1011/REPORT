@@ -275,16 +275,6 @@ function App() {
             </>
           )}
           
-          <button 
-            onClick={() => {
-              setIsPdfScanMode(false);
-              setPdfDownloadTriggered(false);
-              setView('list');
-            }}
-            style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.9rem', textDecoration: 'underline' }}
-          >
-            Go to App Dashboard
-          </button>
         </div>
 
         <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '297mm' }}>
