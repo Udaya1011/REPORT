@@ -1,14 +1,14 @@
 import React from 'react';
-import { Plus, FileText, ChevronRight, LayoutGrid, Download } from 'lucide-react';
+import { Plus, FileText, ChevronRight, LayoutGrid, Download, Trash2 } from 'lucide-react';
 
-const DCPage = ({ onSelectDC, onAddNewDC, onDownloadDC, dcList }) => {
+const DCPage = ({ onSelectDC, onAddNewDC, onDownloadDC, onDeleteDC, dcList }) => {
   return (
     <div className="dc-manager-view" style={{ padding: '1rem' }}>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
         {dcList.map(dc => (
           <div 
-            key={dc.id}
+            key={dc.id || dc._id}
             onClick={() => onSelectDC(dc)}
             style={{
               background: 'white',
@@ -45,8 +45,6 @@ const DCPage = ({ onSelectDC, onAddNewDC, onDownloadDC, dcList }) => {
                   }}
                   style={{ background: '#eff6ff', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'var(--accent)', padding: '6px', display: 'flex', alignItems: 'center', transition: 'background 0.2s' }}
                   title="Download Delivery Report"
-                  onMouseOver={(e) => e.currentTarget.style.background = '#dbeafe'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#eff6ff'}
                 >
                   <Download size={16} />
                 </button>

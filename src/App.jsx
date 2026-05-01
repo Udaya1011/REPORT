@@ -180,12 +180,26 @@ function App() {
       const savedDC = await response.json();
       setDcCollections(prev => [savedDC, ...prev]);
       setIsCreatingDC(false);
-      setSelectedForDC([]);
+      setIsSelectMode(false);
+      setSelectedIds([]);
       setView('dc');
     } catch (err) {
       alert('Failed to save DC batch');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteDC = async (id) => {
+    try {
+      const response = await fetch(`${DC_API_URL}/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete DC');
+      setDcCollections(prev => prev.filter(dc => (dc.id || dc._id) !== id));
+      if (selectedDC && (selectedDC.id === id || selectedDC._id === id)) {
+        setSelectedDC(null);
+      }
+    } catch (err) {
+      alert('Failed to delete DC: ' + err.message);
     }
   };
 
@@ -322,7 +336,11 @@ function App() {
             className="btn btn-primary" 
             onClick={() => {
               if (view === 'list') { setShowForm(true); setEditingReport(null); }
-              else if (view === 'dc') { setIsCreatingDC(true); setView('list'); }
+              else if (view === 'dc') { 
+                setIsCreatingDC(true); 
+                setIsSelectMode(true); 
+                setView('list'); 
+              }
             }}
             style={{ padding: '0.4rem 0.6rem', minWidth: '40px', justifyContent: 'center' }}
           >
@@ -373,6 +391,7 @@ function App() {
             <DCPage 
               dcList={dcCollections}
               onSelectDC={(dc) => setSelectedDC(dc)}
+              onDeleteDC={(id) => handleDeleteDC(id)}
               onDownloadDC={(dc) => {
                 setBulkReports(reports.filter(r => dc.reportIds?.includes(r.id)));
                 setDownloadDcInfo(dc);
