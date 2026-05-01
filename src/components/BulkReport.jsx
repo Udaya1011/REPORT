@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Printer, ArrowLeft, Download, Loader2 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
-const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete, summaryOnly = false, isDCView = false, dcInfo = null }) => {
+const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete, summaryOnly = false, isDCView = false, dcInfo = null, autoOpenBlob = false }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const containerRef = useRef(null);
   const sizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
@@ -88,16 +88,31 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete,
       pagebreak: { mode: ['css', 'legacy'] }
     };
 
-    html2pdf().set(opt).from(tempContainer).save().then(() => {
-      document.body.removeChild(tempContainer);
-      setIsDownloading(false);
-      if (onDownloadComplete) onDownloadComplete();
-    }).catch(err => {
-      console.error('PDF Error:', err);
-      if (tempContainer.parentNode) document.body.removeChild(tempContainer);
-      setIsDownloading(false);
-      if (onDownloadComplete) onDownloadComplete();
-    });
+    if (autoOpenBlob) {
+      html2pdf().set(opt).from(tempContainer).outputPdf('blob').then((pdfBlob) => {
+        document.body.removeChild(tempContainer);
+        setIsDownloading(false);
+        const url = URL.createObjectURL(pdfBlob);
+        window.location.replace(url);
+        if (onDownloadComplete) onDownloadComplete();
+      }).catch(err => {
+        console.error('PDF Error:', err);
+        if (tempContainer.parentNode) document.body.removeChild(tempContainer);
+        setIsDownloading(false);
+        if (onDownloadComplete) onDownloadComplete();
+      });
+    } else {
+      html2pdf().set(opt).from(tempContainer).save().then(() => {
+        document.body.removeChild(tempContainer);
+        setIsDownloading(false);
+        if (onDownloadComplete) onDownloadComplete();
+      }).catch(err => {
+        console.error('PDF Error:', err);
+        if (tempContainer.parentNode) document.body.removeChild(tempContainer);
+        setIsDownloading(false);
+        if (onDownloadComplete) onDownloadComplete();
+      });
+    }
   };
 
   const handleDownloadAll = () => {
@@ -249,7 +264,7 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete,
 
                   <div style={{ textAlign: 'center', width: '150px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                     <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${window.location.origin}/?dc=${dcInfo.id || dcInfo._id}`)}`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(`${window.location.origin}/?dc=${dcInfo.id || dcInfo._id}&view=pdf`)}`}
                       alt="Scan to view DC"
                       style={{ width: '60px', height: '60px', display: 'block' }}
                     />

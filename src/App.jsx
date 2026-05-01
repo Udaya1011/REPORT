@@ -26,6 +26,7 @@ function App() {
   const [dcCollections, setDcCollections] = useState([]);
   const [isCreatingDC, setIsCreatingDC] = useState(false);
   const [selectedForDC, setSelectedForDC] = useState([]);
+  const [isPdfScanMode, setIsPdfScanMode] = useState(false);
 
   // Dynamically select API URL based on environment (Localhost vs Render)
   const API_URL = import.meta.env.PROD
@@ -67,11 +68,16 @@ function App() {
       // Handle QR Code Scans: If URL has ?dc=ID, automatically open that DC
       const params = new URLSearchParams(window.location.search);
       const dcParam = params.get('dc');
+      const viewParam = params.get('view');
       if (dcParam && loadedDCs.length > 0) {
         const matchedDC = loadedDCs.find(dc => dc._id === dcParam || dc.id === dcParam);
         if (matchedDC) {
           setSelectedDC(matchedDC);
-          setView('dc');
+          if (viewParam === 'pdf') {
+            setIsPdfScanMode(true);
+          } else {
+            setView('dc');
+          }
         }
       }
     } catch (err) {
@@ -211,6 +217,28 @@ function App() {
 
     return matchesSearch && matchesDate;
   });
+
+  if (isPdfScanMode && selectedDC) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'system-ui' }}>
+        <Loader2 size={48} className="spin" color="var(--accent)" style={{ marginBottom: '20px' }} />
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text)' }}>Opening PDF Document...</h1>
+        <p style={{ color: 'var(--text-muted)' }}>Please wait while the delivery report is generated.</p>
+        <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '297mm' }}>
+          <BulkReport
+            reports={reports.filter(r => selectedDC.reportIds?.includes(r.id))}
+            onBack={() => setIsPdfScanMode(false)}
+            autoDownload={true}
+            summaryOnly={false}
+            isDCView={true}
+            dcInfo={selectedDC}
+            autoOpenBlob={true}
+            onDownloadComplete={() => setIsPdfScanMode(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
