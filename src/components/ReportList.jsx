@@ -85,9 +85,14 @@ const ReportList = ({
                   <Printer size={18} /> Download Selected ({selectedIds.length})
                 </button>
               ) : (
-                <button className="btn btn-secondary" onClick={() => onPrintAll()} style={{borderColor: 'var(--accent)', color: 'var(--accent)'}}>
-                  <Printer size={18} /> Download All (PDF)
-                </button>
+                <div style={{display: 'flex', gap: '0.5rem'}}>
+                  <button className="btn btn-secondary" onClick={() => onPrintAll(null, false)} style={{borderColor: 'var(--accent)', color: 'var(--accent)'}}>
+                    <Printer size={18} /> Download All (PDF)
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => onPrintAll(null, true)} style={{borderColor: '#8b5cf6', color: '#8b5cf6'}}>
+                    <Printer size={18} /> Delivery Report
+                  </button>
+                </div>
               )}
             </>
           )}

@@ -18,10 +18,11 @@ function App() {
   const [filterDate, setFilterDate] = useState(todayStr);
   const [bulkReports, setBulkReports] = useState([]);
   const [isAutoDownload, setIsAutoDownload] = useState(false);
+  const [isDeliveryMode, setIsDeliveryMode] = useState(false);
 
   // Dynamically select API URL based on environment (Localhost vs Render)
-  const API_URL = import.meta.env.PROD 
-    ? 'https://report-backend-1-2iec.onrender.com/api/reports' 
+  const API_URL = import.meta.env.PROD
+    ? 'https://report-backend-1-2iec.onrender.com/api/reports'
     : 'http://localhost:5000/api/reports';
 
   // Load reports from MongoDB
@@ -58,12 +59,12 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newReport)
       });
-      
+
       if (!response.ok) throw new Error('Failed to save report');
-      
+
       const savedReport = await response.json();
       console.log('Report saved to MongoDB:', savedReport);
-      
+
       setReports(prev => [savedReport, ...prev]);
       setShowForm(false);
       setSelectedReport(savedReport);
@@ -87,9 +88,9 @@ function App() {
       const response = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE'
       });
-      
+
       if (!response.ok) throw new Error('Failed to delete report');
-      
+
       setReports(prev => prev.filter(report => report.id !== id));
       if (selectedReport && selectedReport.id === id) {
         setSelectedReport(null);
@@ -103,108 +104,110 @@ function App() {
   };
 
   const filteredReports = reports.filter(report => {
-    const matchesSearch = 
+    const matchesSearch =
       report.productCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.po?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.brand?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesDate = !filterDate || report.date === filterDate;
-    
+
     return matchesSearch && matchesDate;
   });
 
   return (
     <div className="app-container">
       <nav className="navbar">
-        <div className="brand-logo" onClick={() => {setView('list'); setSearchTerm(''); setFilterDate('');}} style={{cursor: 'pointer'}}>
+        <div className="brand-logo" onClick={() => { setView('list'); setSearchTerm(''); setFilterDate(''); }} style={{ cursor: 'pointer' }}>
           <div className="logo-icon">
             <Shield size={20} />
           </div>
           <span>TexTrack QC</span>
         </div>
-        
-        <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <Bell size={20} color="var(--text-muted)" cursor="pointer" />
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'}}>
-            <div style={{width: '32px', height: '32px', background: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'}}>
-              <User size={18} style={{margin: 'auto'}} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <div style={{ width: '32px', height: '32px', background: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+              <User size={18} style={{ margin: 'auto' }} />
             </div>
-            <span className="user-name" style={{fontWeight: 600, fontSize: '0.9rem'}}>Admin</span>
+            <span className="user-name" style={{ fontWeight: 600, fontSize: '0.9rem' }}>Admin</span>
           </div>
         </div>
       </nav>
 
       <main className="main-content">
         {loading ? (
-          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem', flexDirection: 'column', gap: '1rem'}}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem', flexDirection: 'column', gap: '1rem' }}>
             <div style={{
               width: '40px', height: '40px', border: '4px solid var(--border)',
               borderTop: '4px solid var(--accent)', borderRadius: '50%',
               animation: 'spin 1s linear infinite'
             }} />
-            <p style={{color: 'var(--text-muted)'}}>Loading reports...</p>
+            <p style={{ color: 'var(--text-muted)' }}>Loading reports...</p>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         ) : error ? (
-          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem', flexDirection: 'column', gap: '1rem'}}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem', flexDirection: 'column', gap: '1rem' }}>
             <div style={{
               padding: '2rem', background: '#fef2f2', border: '1px solid #fecaca',
               borderRadius: '12px', textAlign: 'center', maxWidth: '500px'
             }}>
-              <p style={{color: '#dc2626', fontWeight: 600, marginBottom: '0.5rem'}}>⚠️ Connection Error</p>
-              <p style={{color: '#991b1b', fontSize: '0.9rem', marginBottom: '1rem'}}>{error}</p>
-              <button 
-                className="btn btn-primary" 
+              <p style={{ color: '#dc2626', fontWeight: 600, marginBottom: '0.5rem' }}>⚠️ Connection Error</p>
+              <p style={{ color: '#991b1b', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>
+              <button
+                className="btn btn-primary"
                 onClick={fetchReports}
-                style={{margin: '0 auto'}}
+                style={{ margin: '0 auto' }}
               >
                 🔄 Retry
               </button>
             </div>
           </div>
         ) : view === 'list' ? (
-          <ReportList 
-            reports={filteredReports} 
+          <ReportList
+            reports={filteredReports}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             filterDate={filterDate}
             setFilterDate={setFilterDate}
-            onSelectReport={handleSelectReport} 
+            onSelectReport={handleSelectReport}
             onDeleteReport={handleDeleteReport}
-            onAddNew={() => setShowForm(true)} 
-            onPrintAll={(customReports) => {
+            onAddNew={() => setShowForm(true)}
+            onPrintAll={(customReports, isDelivery = false) => {
               setBulkReports(customReports || filteredReports);
+              setIsDeliveryMode(isDelivery);
               setIsAutoDownload(true);
             }}
           />
         ) : (
-          <ReportDetails 
-            report={selectedReport} 
-            onBack={() => setView('list')} 
+          <ReportDetails
+            report={selectedReport}
+            onBack={() => setView('list')}
           />
         )}
 
         {/* Hidden Bulk Report for background downloads */}
         {isAutoDownload && (
           <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '297mm' }}>
-             <BulkReport 
-                reports={bulkReports} 
-                onBack={() => setIsAutoDownload(false)} 
-                autoDownload={true}
-                onDownloadComplete={() => setIsAutoDownload(false)}
-             />
+            <BulkReport
+              reports={bulkReports}
+              onBack={() => setIsAutoDownload(false)}
+              autoDownload={true}
+              isDelivery={isDeliveryMode}
+              onDownloadComplete={() => setIsAutoDownload(false)}
+            />
           </div>
         )}
       </main>
 
       {showForm && (
-        <ReportForm 
-          onClose={() => setShowForm(false)} 
-          onSubmit={handleAddReport} 
+        <ReportForm
+          onClose={() => setShowForm(false)}
+          onSubmit={handleAddReport}
         />
       )}
 
-      <footer className="no-print" style={{padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem'}}>
+      <footer className="no-print" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
         &copy; 2026 TexTrack Quality Control Systems. All rights reserved.
       </footer>
     </div>

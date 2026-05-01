@@ -235,10 +235,6 @@ const ReportDetails = ({ report, onBack }) => {
                     ))}
                   </tr>
                 ))}
-                {/* blank spacer row */}
-                <tr style={{ height: '18px' }}>
-                  <td colSpan="15"></td>
-                </tr>
               </tbody>
             </table>
           </div>
@@ -258,7 +254,7 @@ const ReportDetails = ({ report, onBack }) => {
 
           <div style={{
             position: 'absolute', bottom: '5px', right: '10px',
-            fontSize: '8pt', color: '#94a3b8', fontWeight: 'bold', opacity: 0.5
+            fontSize: '8pt', color: '#000', fontWeight: '900', opacity: 1
           }}>TEXTRACK</div>
 
         </div>
