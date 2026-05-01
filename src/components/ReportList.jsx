@@ -14,16 +14,12 @@ const ReportList = ({
   onPrintAll,
   isCreatingDC = false,
   onSaveDC,
-  usedReportIds = []
+  usedReportIds = [],
+  isSelectMode,
+  setIsSelectMode,
+  selectedIds,
+  setSelectedIds
 }) => {
-  const [isSelectMode, setIsSelectMode] = React.useState(isCreatingDC);
-  const [selectedIds, setSelectedIds] = React.useState([]);
-
-  React.useEffect(() => {
-    if (isCreatingDC) {
-      setIsSelectMode(true);
-    }
-  }, [isCreatingDC]);
 
   const toggleSelect = (id) => {
     if (usedReportIds.includes(id)) return;
@@ -32,10 +28,6 @@ const ReportList = ({
     );
   };
 
-  const handlePrintSelected = () => {
-    const selectedReports = reports.filter(r => selectedIds.includes(r.id));
-    onPrintAll(selectedReports);
-  };
 
   const handleSelectAllForDate = (dateKey) => {
     const dateReports = groupedReports[dateKey].map(r => r.id).filter(id => !usedReportIds.includes(id));
@@ -78,71 +70,18 @@ const ReportList = ({
 
   return (
     <div className="report-list-view">
-      <div className="header-actions">
-        <div>
-          <h1>QC Inspection Dashboard</h1>
-          <p style={{color: 'var(--text-muted)'}}>Manage and track your garment quality reports</p>
-        </div>
-        <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap'}}>
-          {reports.length > 0 && (
-            <>
-              <button 
-                className={`btn ${isSelectMode ? 'btn-primary' : 'btn-secondary'}`} 
-                onClick={() => {
-                  setIsSelectMode(!isSelectMode);
-                  setSelectedIds([]);
-                }}
-              >
-                {isSelectMode ? 'Cancel Selection' : 'Select Reports'}
-              </button>
-              
-              {isSelectMode ? (
-                <button 
-                  className="btn btn-primary" 
-                  onClick={handlePrintSelected}
-                  disabled={selectedIds.length === 0}
-                  style={{background: 'var(--success)', borderColor: 'var(--success)'}}
-                >
-                  <Printer size={18} /> Download Selected ({selectedIds.length})
-                </button>
-              ) : (
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <button className="btn btn-secondary" onClick={() => onPrintAll(null, false)} style={{borderColor: 'var(--accent)', color: 'var(--accent)'}}>
-                    <Printer size={18} /> Download All (PDF)
-                  </button>
-                </div>
-              )}
-              
-              {isCreatingDC && (
-                <button 
-                  className="btn btn-primary" 
-                  onClick={() => onSaveDC(selectedIds)}
-                  disabled={selectedIds.length === 0}
-                  style={{background: 'var(--accent)', borderColor: 'var(--accent)', fontWeight: 'bold'}}
-                >
-                  Save DC Batch ({selectedIds.length})
-                </button>
-              )}
-            </>
-          )}
-          <button className="btn btn-primary" onClick={onAddNew}>
-            + Add New Report
-          </button>
-        </div>
+      <div className="search-container" style={{background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem'}}>
+        <Search size={18} color="var(--text-muted)" />
+        <input type="text" placeholder="Search by Product, PO, or Brand..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{border: 'none', background: 'transparent', outline: 'none', fontSize: '0.95rem', width: '100%'}} />
       </div>
 
-      <div className="filter-bar" style={{display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap', alignItems: 'center'}}>
-        <div style={{display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden'}}>
+      <div className="filter-bar" style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center'}}>
+        <div className="date-toggle" style={{display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden'}}>
            <button onClick={() => {
              const t = new Date();
              setFilterDate(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`);
            }} style={{padding: '0.6rem 1.2rem', border: 'none', background: filterDate === (() => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}` })() ? 'var(--accent)' : 'transparent', color: filterDate === (() => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}` })() ? 'white' : 'var(--text-main)', cursor: 'pointer', fontSize: '0.9rem'}}>Today</button>
            <button onClick={() => setFilterDate('')} style={{padding: '0.6rem 1.2rem', border: 'none', borderLeft: '1px solid var(--border)', background: filterDate === '' ? 'var(--accent)' : 'transparent', color: filterDate === '' ? 'white' : 'var(--text-main)', cursor: 'pointer', fontSize: '0.9rem'}}>All Days</button>
-        </div>
-
-        <div className="search-container" style={{flex: 1, minWidth: '250px', background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-          <Search size={18} color="var(--text-muted)" />
-          <input type="text" placeholder="Search by Product, PO, or Brand..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{border: 'none', background: 'transparent', outline: 'none', fontSize: '0.95rem', width: '100%'}} />
         </div>
 
         <div className="calendar-filter" style={{background: 'var(--surface)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '200px'}}>
@@ -151,8 +90,23 @@ const ReportList = ({
           {filterDate && <button onClick={() => setFilterDate('')} style={{border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0.5rem'}}>&times;</button>}
         </div>
       </div>
+      <div className="header-actions">
+        <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1}}>
+          {isCreatingDC && (
+            <button 
+              className="btn btn-primary" 
+              onClick={() => onSaveDC(selectedIds)}
+              disabled={selectedIds.length === 0}
+              style={{background: 'var(--accent)', borderColor: 'var(--accent)', fontWeight: 'bold'}}
+            >
+              Save DC Batch ({selectedIds.length})
+            </button>
+          )}
+        </div>
+      </div>
 
-      <div className="reports-container" style={{marginTop: '2rem'}}>
+
+      <div className="reports-container" style={{marginTop: '1rem'}}>
         {reports.length === 0 ? (
           <div style={{textAlign: 'center', padding: '4rem', background: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
             <Layers size={48} color="var(--text-muted)" style={{marginBottom: '1rem', opacity: 0.5}} />

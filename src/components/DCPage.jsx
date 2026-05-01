@@ -3,20 +3,7 @@ import { Plus, FileText, ChevronRight, LayoutGrid, Download } from 'lucide-react
 
 const DCPage = ({ onSelectDC, onAddNewDC, onDownloadDC, dcList }) => {
   return (
-    <div className="dc-manager-view" style={{ padding: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>Delivery Challan (DC) Manager</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Organize your reports into delivery batches</p>
-        </div>
-        <button 
-          className="btn btn-primary" 
-          onClick={onAddNewDC}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-        >
-          <Plus size={20} /> Create New DC
-        </button>
-      </div>
+    <div className="dc-manager-view" style={{ padding: '1rem' }}>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
         {dcList.map(dc => (
