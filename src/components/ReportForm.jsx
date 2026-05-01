@@ -201,26 +201,6 @@ const ReportForm = ({ onClose, onSubmit, report = null }) => {
                 </div>
               </div>
 
-              <div style={{display: 'flex', gap: '1rem'}}>
-                <div className="form-group" style={{flex: 1}}>
-                  <label className="form-label">Unit Name</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.unitName}
-                    onChange={e => setFormData({...formData, unitName: e.target.value.toUpperCase()})}
-                  />
-                </div>
-                <div className="form-group" style={{flex: 1}}>
-                  <label className="form-label">QC Personnel</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.qamName}
-                    onChange={e => setFormData({...formData, qamName: e.target.value.toUpperCase()})}
-                  />
-                </div>
-              </div>
 
               <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: '2rem'}}>
                 <button 

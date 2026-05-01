@@ -431,16 +431,18 @@ function App() {
         &copy; 2026 TexTrack Quality Control Systems. All rights reserved.
       </footer>
 
-      <div className="mobile-bottom-nav">
-        <div className={`nav-item ${view === 'list' ? 'active' : ''}`} onClick={() => { setView('list'); window.scrollTo(0, 0); }}>
-          <FileText size={24} />
-          <span>REPORT</span>
+      {!showForm && (
+        <div className="mobile-bottom-nav">
+          <div className={`nav-item ${view === 'list' ? 'active' : ''}`} onClick={() => { setView('list'); window.scrollTo(0, 0); }}>
+            <FileText size={24} />
+            <span>REPORT</span>
+          </div>
+          <div className={`nav-item ${view === 'dc' ? 'active' : ''}`} onClick={() => { setView('dc'); window.scrollTo(0, 0); }}>
+            <Shield size={24} />
+            <span>DC</span>
+          </div>
         </div>
-        <div className={`nav-item ${view === 'dc' ? 'active' : ''}`} onClick={() => { setView('dc'); window.scrollTo(0, 0); }}>
-          <Shield size={24} />
-          <span>DC</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
