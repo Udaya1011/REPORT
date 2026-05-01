@@ -90,20 +90,6 @@ const ReportList = ({
           {filterDate && <button onClick={() => setFilterDate('')} style={{border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0.5rem'}}>&times;</button>}
         </div>
       </div>
-      <div className="header-actions">
-        <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1}}>
-          {isCreatingDC && (
-            <button 
-              className="btn btn-primary" 
-              onClick={() => onSaveDC(selectedIds)}
-              disabled={selectedIds.length === 0}
-              style={{background: 'var(--accent)', borderColor: 'var(--accent)', fontWeight: 'bold'}}
-            >
-              Save DC Batch ({selectedIds.length})
-            </button>
-          )}
-        </div>
-      </div>
 
 
       <div className="reports-container" style={{marginTop: '1rem'}}>

@@ -209,21 +209,7 @@ const BulkReport = ({ reports, onBack, autoDownload = false, onDownloadComplete,
     <div className="report-view-wrapper" ref={containerRef}>
       <div className="no-print header-actions">
         <button className="btn btn-secondary" onClick={onBack}><ArrowLeft size={18} /> Back</button>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn btn-primary" onClick={handleDownloadPDF} disabled={isDownloading}>
-            {isDownloading 
-              ? <><Loader2 size={18} className="spin" /> Generating...</>
-              : isDCView 
-                ? <><Download size={18} /> Download Delivery Report</>
-                : <><Download size={18} /> Download All</>
-            }
-          </button>
-          {isDCView && (
-            <button className="btn btn-secondary" onClick={handleDownloadAll} disabled={isDownloading}>
-              <Download size={18} /> Download All Reports
-            </button>
-          )}
-        </div>
+        <button id="main-download-btn" onClick={handleDownloadPDF} style={{ display: 'none' }} />
       </div>
 
       <div className="report-scroll-container" style={{ minWidth: '100%', overflowX: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

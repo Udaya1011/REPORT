@@ -243,18 +243,92 @@ function App() {
       <nav className="navbar">
         <div className="brand-logo" onClick={() => { setView('list'); setSearchTerm(''); setFilterDate(''); }} style={{ cursor: 'pointer' }}>
           <div className="logo-icon"><Shield size={20} /></div>
-          <span>TexTrack QC</span>
+          <span className="desktop-only">TexTrack QC</span>
         </div>
-        <button 
-          className="btn btn-primary" 
-          onClick={() => {
-            if (view === 'list') { setShowForm(true); setEditingReport(null); }
-            else if (view === 'dc') { setIsCreatingDC(true); setView('list'); }
-          }}
-          style={{ padding: '0.4rem 0.6rem', minWidth: '40px', justifyContent: 'center', marginLeft: 'auto' }}
-        >
-          <Plus size={18} />
-        </button>
+
+        <div className="top-view-toggle desktop-only" style={{ background: '#f1f5f9', padding: '3px', borderRadius: '10px', marginLeft: '1rem', border: '1px solid #e2e8f0' }}>
+          <button 
+            onClick={() => { setView('list'); setEditingReport(null); setShowForm(false); }}
+            style={{ 
+              padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold', border: 'none', borderRadius: '8px',
+              background: view === 'list' || view === 'details' ? 'white' : 'transparent',
+              color: view === 'list' || view === 'details' ? 'var(--accent)' : '#64748b',
+              boxShadow: view === 'list' || view === 'details' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            REPORT
+          </button>
+          <button 
+            onClick={() => { setView('dc'); setEditingReport(null); setShowForm(false); setSelectedDC(null); }}
+            style={{ 
+              padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold', border: 'none', borderRadius: '8px',
+              background: view === 'dc' ? 'white' : 'transparent',
+              color: view === 'dc' ? 'var(--accent)' : '#64748b',
+              boxShadow: view === 'dc' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            DC
+          </button>
+        </div>
+        <div className="navbar-actions" style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto', alignItems: 'center' }}>
+          {view === 'list' && !isCreatingDC && (
+            <>
+              <button 
+                className={`btn ${isSelectMode ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => {
+                  setIsSelectMode(!isSelectMode);
+                  if (isSelectMode) setSelectedIds([]);
+                }}
+                style={{ padding: '0.4rem 0.6rem', minWidth: '40px', justifyContent: 'center' }}
+                title="Select Mode"
+              >
+                <MousePointer2 size={18} />
+              </button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => handlePrint(filteredReports)}
+                style={{ padding: '0.4rem 0.6rem', minWidth: '40px', justifyContent: 'center' }}
+                title="Download All"
+              >
+                <Download size={18} />
+              </button>
+            </>
+          )}
+          {isCreatingDC && (
+            <button 
+              className="btn btn-primary" 
+              onClick={() => handleSaveDC(selectedIds)}
+              disabled={selectedIds.length === 0}
+              style={{ padding: '0.4rem 0.8rem', fontWeight: 'bold' }}
+            >
+              Save DC ({selectedIds.length})
+            </button>
+          )}
+          {view === 'dc' && selectedDC && (
+            <button 
+              className="btn btn-primary"
+              onClick={() => {
+                const downloadBtn = document.getElementById('main-download-btn');
+                if (downloadBtn) downloadBtn.click();
+              }}
+              style={{ padding: '0.4rem 0.6rem', minWidth: '40px', justifyContent: 'center' }}
+            >
+              <Download size={18} />
+            </button>
+          )}
+          <button 
+            className="btn btn-primary" 
+            onClick={() => {
+              if (view === 'list') { setShowForm(true); setEditingReport(null); }
+              else if (view === 'dc') { setIsCreatingDC(true); setView('list'); }
+            }}
+            style={{ padding: '0.4rem 0.6rem', minWidth: '40px', justifyContent: 'center' }}
+          >
+            <Plus size={18} />
+          </button>
+        </div>
       </nav>
 
       <main className="main-content">
@@ -341,7 +415,7 @@ function App() {
       <div className="mobile-bottom-nav">
         <div className={`nav-item ${view === 'list' ? 'active' : ''}`} onClick={() => { setView('list'); window.scrollTo(0, 0); }}>
           <FileText size={24} />
-          <span>Report</span>
+          <span>REPORT</span>
         </div>
         <div className={`nav-item ${view === 'dc' ? 'active' : ''}`} onClick={() => { setView('dc'); window.scrollTo(0, 0); }}>
           <Shield size={24} />
