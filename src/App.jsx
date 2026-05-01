@@ -320,7 +320,7 @@ function App() {
               Save DC ({selectedIds.length})
             </button>
           )}
-          {view === 'dc' && selectedDC && (
+          {((view === 'dc' && selectedDC) || (view === 'details' && selectedReport)) && (
             <button 
               className="btn btn-primary"
               onClick={() => {
@@ -401,7 +401,11 @@ function App() {
             />
           )
         ) : (
-          <ReportDetails report={selectedReport} onBack={() => setView('list')} />
+          <BulkReport 
+            reports={[selectedReport]} 
+            onBack={() => setView('list')} 
+            isDCView={false}
+          />
         ) }
 
         {isAutoDownload && (
